@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "prestart": "",
-    "start": "pm2 start index.js"
+    "start": "nodemon index.js mongod --dbpath=./db"
   },
   "author": "ninjasolution",
   "license": "ISC",

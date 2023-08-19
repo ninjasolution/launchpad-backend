@@ -80,44 +80,38 @@ function initial() {
   Role.estimatedDocumentCount(async (err, count) => {
     if (!err && count === 0) {
 
-      for(let i=0 ; i<db.ROLES.length ; i++) {
+      for (let i = 0; i < db.ROLES.length; i++) {
         let role = new Role({
           name: db.ROLES[i]
         })
         await role.save();
       }
 
-      new Role({
-        name: SUPERADMIN
-      }).save(err => {
-        if (err) {
-          console.log("error", err);
-        }
 
+      Role.findOne({ name: SUPERADMIN }, (err, role) => {
+        if (err) {
+          return;
+        }
         const adminUser = new User({
           username: 'admin',
           email: 'admin@gmail.com',
+          wallet: "0x7B7887059860a1A21f3C62542B6CE5c0a23c76d5",
           password: bcrypt.hashSync("admin", 8),
           phoneVerified: true,
           emailVerified: true,
+          role: role._id,
           enabled: true
         })
-        Role.findOne({ name: SUPERADMIN }, (err, role) => {
+
+        adminUser.save(err => {
           if (err) {
-            return;
+            return console.log(err);
           }
 
-          adminUser.role = role._id;
-          adminUser.save(err => {
-            if (err) {
-              return console.log(err);
-            }
-
-            console.log("Database is initialized successfuly!")
-          });
+          console.log("Database is initialized successfuly!")
         });
-
       });
+
     }
   });
 
@@ -159,14 +153,14 @@ function initial() {
     if (!err && count == 0) {
 
       source.countries.forEach(async item => {
-        const country = new Country({ 
-            name: item.name, 
-            code: item.code, 
-            timezone: item.timezone, 
-            utc: item.utc, 
-            mobileCode: item.mobileCode, 
-          });
-        await country.save();  
+        const country = new Country({
+          name: item.name,
+          code: item.code,
+          timezone: item.timezone,
+          utc: item.utc,
+          mobileCode: item.mobileCode,
+        });
+        await country.save();
       })
     }
   });
@@ -175,15 +169,15 @@ function initial() {
     if (!err && count == 0) {
 
       source.tiers.forEach(async item => {
-        const tier = new Tier({ 
-            minAmount: item.minAmount, 
-            maxAmount: item.maxAmount, 
-            percent: item.percent, 
-            duration: item.duration, 
-            level: item.level, 
-            label: item.id
-          });
-        await tier.save();  
+        const tier = new Tier({
+          minAmount: item.minAmount,
+          maxAmount: item.maxAmount,
+          percent: item.percent,
+          duration: item.duration,
+          level: item.level,
+          label: item.id
+        });
+        await tier.save();
       })
     }
   });
@@ -199,3 +193,4 @@ app.listen(PORT, () => {
 
 
 //nodemon index.js mongod --dbpath=./db
+//pm2 start index.js

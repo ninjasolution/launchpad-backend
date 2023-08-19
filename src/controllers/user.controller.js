@@ -1,3 +1,4 @@
+const { ethers } = require("ethers");
 const { SUBADMIN, RES_STATUS_SUCCESS } = require("../config");
 const { requestBotAPI } = require("../helpers");
 const db = require("../models");
@@ -125,6 +126,7 @@ exports.getUserNonce = (req, res) => {
         let _nonce = getRndInteger(0, 10000)
         let newNonce = new Nonce({wallet: req.params.address, nonce: _nonce})
         await newNonce.save();
+
         return res.status(200).json({ status: RES_STATUS_SUCCESS, data: { nonce: _nonce } });
         // return res.status(200).send({ message: "User Not found.", status: "errors" });
       }

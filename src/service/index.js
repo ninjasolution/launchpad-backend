@@ -27,7 +27,6 @@ class Service {
         this.igoDeployerContract = new ethers.Contract(igoDeployerAddr, IGODeployer.abi, this.wallet)
 
         // this.setRootHash("0x506A31614297d4eBA6Baf0021CBFD92aa82F4776", "0x77a1281e1dd2a9a567d1730233bf959665e5f8cbf8d5e5939e2f4c349dd7f8b2")
-        // this.getRootHash("0x506A31614297d4eBA6Baf0021CBFD92aa82F4776", "0x77a1281e1dd2a9a567d1730233bf959665e5f8cbf8d5e5939e2f4c349dd7f8b2")
     }
 
     async setRootHash(address, hash) {
@@ -75,7 +74,7 @@ class Service {
     }
 
     async recoverSignature(nonce, signature) {
-        return await ethers.utils.verifyMessage(ethers.utils.hexlify(nonce), signature)
+        return await ethers.utils.verifyMessage(nonce.toString(), signature)
     }
 
     async createIGO(name, tagIds, tags) {
