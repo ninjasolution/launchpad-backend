@@ -99,6 +99,7 @@ function initial() {
           password: bcrypt.hashSync("admin", 8),
           phoneVerified: true,
           emailVerified: true,
+          status: 1,
           role: role._id,
           enabled: true
         })

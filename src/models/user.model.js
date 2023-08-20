@@ -12,6 +12,9 @@ module.exports = (connection, autoIncrement) => {
     email: {
       type: String,
     },
+    status: {
+      type: Number,
+    },
     levelName: {
       type: String,
     },

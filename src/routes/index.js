@@ -28,7 +28,8 @@ router.get("/auth/requestPhoneVerify", middlewares.authJwt.verifyToken, authCont
 router.get("/auth/rest/:token", authController.reset)
 router.put("/auth/rest", authController.changePassword)
 
-router.post("/admin/create", userController.create);
+router.get("/super-admin/approve", userController.approve);
+router.post("/admin/create", authController.signup);
 router.get("/admin/get-nonce/:address", userController.getUserNonce);
 router.get("/admin/single/:id([0-9]+)", [middlewares.authJwt.verifyToken, middlewares.authJwt.isAdmin], userController.getUser);
 router.put("/admin/edit", middlewares.authJwt.verifyToken, userController.update);
@@ -36,7 +37,7 @@ router.get("/admin/gen-snapshot", middlewares.authJwt.verifyToken, projectContro
 router.get("/admin/get-whitelisted-user", middlewares.authJwt.verifyToken, projectController.getWhiteList);
 router.get("/admin/get-snapshot-data", middlewares.authJwt.verifyToken, projectController.getSnapshot);
 
-router.get("/admin/list", [middlewares.authJwt.verifyToken, middlewares.authJwt.isAdmin], userController.getUsers);
+router.get("/admin/list", [middlewares.authJwt.verifyToken, middlewares.authJwt.isAdmin], userController.getUnApprovedAdmins);
 router.post("/admin/upload-social-raffle", [middlewares.authJwt.verifyToken, middlewares.authJwt.isAdmin], fileController.uploadCVS, fileController.csvUploader);
 
 router.get("/user", middlewares.authJwt.verifyToken, userController.allUsers);

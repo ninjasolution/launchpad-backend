@@ -2,6 +2,7 @@ const db = require("../models");
 const User = db.user;
 const Role = db.role;
 const Token = db.token;
+const Project = db.project;
 const twilio = require('twilio');
 const promisify = require('util.promisify');
 const nodemailer = require("nodemailer");
@@ -10,28 +11,40 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const service = require("../service");
-const { requestBotAPI } = require("../helpers");
-const { securityCode, SUBADMIN, USER, RES_MSG_SUCESS, RES_STATUS_FAIL } = require("../config");
+const { securityCode, SUBADMIN, USER, RES_MSG_SUCESS, RES_STATUS_FAIL, PROJECT_STATUS_COMPLETED, PROJECT_STATUS_PENDING } = require("../config");
 
 exports.signup = async (req, res) => {
 
   const user = new User({
-    username: req.body.username,
+    name: req.body.name,
+    wallet: req.body.wallet,
+    description: req.body.description,
     email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8),
   });
 
   if (req.body.role) {
-    Role.findOne({ name: req.body.role }, (err, role) => {
+    Role.findOne({ name: req.body.role }, async (err, role) => {
       if (err) {
         return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
       user.role = role._id;
-      user.save(err => {
+      user.status = 0;
+
+      user.save(async(err, user) => {
         if (err) {
           return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
         }
+        let project = new Project({
+          projectName: req.body.projectName,
+          webUrl: req.body.webUrl,
+          status: PROJECT_STATUS_PENDING,
+          createdBy: user._id
+        })
+  
+        project = await project.save();
+        user.projects.push(project._id);
+        await user.save();
 
         res.send(user);
       });
@@ -45,6 +58,7 @@ exports.signup = async (req, res) => {
       }
 
       user.role = role._id;
+      user.status = 1;
       user.save(async (err, nUser) => {
         if (err) {
           return res.status(200).send({ message: `E11000 duplicate key error collection: users index: email_1 dup key: { email: ${req.body.email}}`, status: RES_STATUS_FAIL });
@@ -75,7 +89,8 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res) => {
   const address = await service.recoverSignature(req.body.nonce, req.body.signature)
   User.findOne({
-    wallet: address
+    wallet: address,
+    status: 1
   })
     .populate("role", "name")
     .exec((err, user) => {
@@ -126,6 +141,8 @@ exports.signin = async (req, res) => {
       var token = jwt.sign({ id: user._id }, securityCode, {
         expiresIn: 86400 // 24 hours
       });
+
+      console.log(user)
 
       return res.status(200).send({
         status: RES_MSG_SUCESS,

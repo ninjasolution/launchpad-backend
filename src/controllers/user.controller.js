@@ -75,7 +75,6 @@ exports.allUsers = (req, res) => {
     })
 };
 
-
 exports.getUser = (req, res) => {
   User.findOne({ _id: req.params.id })
     .populate('role', "name")
@@ -94,21 +93,38 @@ exports.getUser = (req, res) => {
     })
 };
 
-exports.getUsers = (req, res) => {
-  Role.findOne({ name: SUBADMIN })
-    .populate('users')
-    .exec((err, role) => {
+exports.getUnApprovedAdmins = (req, res) => {
 
+  Role.findOne({ name: SUBADMIN })
+    .exec((err, role) => {
       if (err) {
-        res.status(200).send({ message: err });
+        res.status(500).send({ message: err });
         return;
       }
 
       if (!role) {
-        return res.status(200).send({ message: "Role Not found.", status: "errors" });
+        return res.status(404).send({ message: "Role Not found.", status: "errors" });
       }
 
-      return res.status(200).send({ status: RES_STATUS_SUCCESS, data: role.users });
+      User.find({
+        role: role?._id,
+        status: 0
+      })
+      .populate("projects")
+      .exec((err, users) => {
+        if (err) {
+          res.status(500).send({ message: err });
+          return;
+        }
+
+        if (!users) {
+          return res.status(404).send({ message: "Users Not found.", status: "errors" });
+        }
+
+        return res.status(200).send({ status: RES_STATUS_SUCCESS, data: users });
+      })
+
+
     })
 };
 
@@ -124,14 +140,14 @@ exports.getUserNonce = (req, res) => {
       if (!nonce) {
 
         let _nonce = getRndInteger(0, 10000)
-        let newNonce = new Nonce({wallet: req.params.address, nonce: _nonce})
+        let newNonce = new Nonce({ wallet: req.params.address, nonce: _nonce })
         await newNonce.save();
 
         return res.status(200).json({ status: RES_STATUS_SUCCESS, data: { nonce: _nonce } });
         // return res.status(200).send({ message: "User Not found.", status: "errors" });
       }
 
-      return res.status(200).json({ status: RES_STATUS_SUCCESS, data: {nonce: nonce.nonce} });
+      return res.status(200).json({ status: RES_STATUS_SUCCESS, data: { nonce: nonce.nonce } });
 
     })
 };
@@ -202,6 +218,30 @@ exports.update = (req, res) => {
         user.image = req.body.image;
       }
       user.socialUrl = req.body.socialUrl;
+
+      user.save(err => {
+        if (err) {
+          return res.status(200).send({ message: err, status: "errors" });
+        }
+        return res.status(200).json({ status: RES_STATUS_SUCCESS, data: user });
+      });
+    })
+};
+
+exports.approve = (req, res) => {
+  User.findOne({ _id: req.query?.id })
+    .exec(async (err, user) => {
+
+      if (err) {
+        res.status(200).send({ message: err, status: "errors" });
+        return;
+      }
+
+      if (!user) {
+        return res.status(200).send({ message: "User Not found.", status: "errors" });
+      }
+
+      user.status = 1;
 
       user.save(err => {
         if (err) {

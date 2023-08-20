@@ -41,6 +41,7 @@ module.exports = {
     PROJECT_STATUS_LOTTERY: "lottery",
     PROJECT_STATUS_WHITELIST: "whitelist",
     PROJECT_STATUS_COMPLETED: "completed",
+    PROJECT_STATUS_PENDING: "pending",
     PROJECT_STATUS_FILEHASH: "filehash",
     PERCENT_DIVISOR: 1000
 }
