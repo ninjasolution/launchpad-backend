@@ -161,6 +161,25 @@ exports.update = async (req, res) => {
 
 }
 
+
+exports.approve = async (req, res) => {
+
+    Project.updateOne({ _id: req.query.projectId }, { status: PROJECT_STATUS_UPLOAD })
+        .exec((err, project) => {
+            if (err) {
+                console.log(err)
+                return res.status(500).send({ message: err, status: "errors" });
+            }
+
+            return res.status(200).send({
+                message: RES_MSG_SUCESS,
+                data: project,
+                status: RES_STATUS_SUCCESS,
+            });
+        })
+
+}
+
 exports.getSnapshot = async (req, res) => {
 
     Project.findOne({ _id: req.query.projectId })

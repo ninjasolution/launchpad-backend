@@ -229,7 +229,7 @@ exports.update = (req, res) => {
 };
 
 exports.approve = (req, res) => {
-  User.findOne({ _id: req.query?.id })
+  User.findOne({ _id: req.query?.userId })
     .exec(async (err, user) => {
 
       if (err) {

@@ -28,7 +28,7 @@ router.get("/auth/requestPhoneVerify", middlewares.authJwt.verifyToken, authCont
 router.get("/auth/rest/:token", authController.reset)
 router.put("/auth/rest", authController.changePassword)
 
-router.get("/super-admin/approve", userController.approve);
+router.put("/super-admin/approve", userController.approve);
 router.post("/admin/create", authController.signup);
 router.get("/admin/get-nonce/:address", userController.getUserNonce);
 router.get("/admin/single/:id([0-9]+)", [middlewares.authJwt.verifyToken, middlewares.authJwt.isAdmin], userController.getUser);
@@ -64,6 +64,7 @@ router.get("/country/list", middlewares.authJwt.verifyToken, countryController.l
 router.get("/project/list", middlewares.authJwt.verifyToken, projectController.list)
 router.post("/project/create", middlewares.authJwt.verifyToken, projectController.create)
 router.put("/project", middlewares.authJwt.verifyToken, projectController.update)
+router.put("/project/approve", middlewares.authJwt.verifyToken, projectController.approve)
 router.put("/project/hash", middlewares.authJwt.verifyToken, projectController.pushHash)
 router.get("/project", middlewares.authJwt.verifyToken, projectController.get)
 router.get("/project/get-proof", middlewares.authJwt.verifyToken, projectController.getProof)

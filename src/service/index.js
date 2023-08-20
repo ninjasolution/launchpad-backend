@@ -29,7 +29,7 @@ class Service {
         // this.setRootHash("0x506A31614297d4eBA6Baf0021CBFD92aa82F4776", "0x77a1281e1dd2a9a567d1730233bf959665e5f8cbf8d5e5939e2f4c349dd7f8b2")
     }
 
-    async setRootHash(address, hash) {
+    async generateStaking(owner, durations, start, ) {
         this.fundingTokenContract = new ethers.Contract(address, FundingToken.abi, this.wallet)
         await this.fundingTokenContract.updateHash(hash);
 
