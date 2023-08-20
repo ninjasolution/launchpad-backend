@@ -6,6 +6,13 @@ module.exports = (connection, autoIncrement) => {
   const CoinSchema = new mongoose.Schema({
     name: {
       type: String,
+    },
+    address: {
+      type: String,
+    },
+    chain: {
+      type: Number,
+      ref: "Chain"
     }
   });
   

@@ -5,6 +5,7 @@ const Project = db.project;
 const Investment = db.investment;
 const Tier = db.tier;
 const { createIGO, generateLeaves, generateMerkleRootAndProof } = require("../service");
+const service = require("../service");
 
 exports.list = (req, res) => {
     var options = {
@@ -161,15 +162,39 @@ exports.update = async (req, res) => {
 
 }
 
-
 exports.approve = async (req, res) => {
 
     Project.updateOne({ _id: req.query.projectId }, { status: PROJECT_STATUS_UPLOAD })
-        .exec((err, project) => {
+        .exec(async (err, project) => {
             if (err) {
                 console.log(err)
                 return res.status(500).send({ message: err, status: "errors" });
             }
+
+            let owner = project.wallet;
+            let name = project.projectName;
+            let igoSetup = {
+                igoVestingAddr: project.vesting.address,
+                paymentTokenAddr: project.paymentToken.address,
+                grandTotal: project.grandTotal,
+                summedMaxTagCap: project.summedMaxTagCap
+            }
+
+            let contractSetup = {
+                igoTokenAddr: project.token.address,
+                totalTokenOnSale: project.totalTokenOnSale
+            }
+
+            let vestingSetup = {
+                startTime: project.vesting.startTime,
+                cliff: project.vesting.cliff,
+                duration: project.vesting.duration,
+                initialUnlock: project.vesting.initialUnlock
+            }
+
+            let allocations = project.allocations;
+
+            await service.createIGO(name, owner, igoSetup, contractSetup, vestingSetup, allocations);
 
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
@@ -224,7 +249,6 @@ exports.getWhiteList = async (req, res) => {
         })
 
 }
-
 
 exports.genSnapshot = async (req, res) => {
     Project.findOne({ _id: req.query.projectId })

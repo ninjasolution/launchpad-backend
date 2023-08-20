@@ -3,7 +3,7 @@ const Coin = db.coin;
 const config = require("../config/index")
 
 exports.list = (req, res) => {
-    Coin.find()
+    Coin.find({chain: req.query.chainId})
       .exec((err, coins) => {
   
         if (err) {

@@ -120,35 +120,34 @@ function initial() {
   Chain.estimatedDocumentCount((err, count) => {
     if (!err && count === 0) {
 
-      source.chains.map((item) => {
+      source.chains.forEach((item) => {
         new Chain({
           name: item.name,
           chainID: item.id,
           RPC: item.RPC,
           explorer: item.explorer,
-        }).save(err => {
+        }).save((err, chain) => {
           if (err) {
             console.log("error", err);
           }
+
+          let coins = source.coins.filter(coin => item.name == coin.chain);
+          coins.forEach((coin) => {
+            new Coin({
+              name: coin.name,
+              address: coin.address,
+              chain: chain._id
+            }).save(err => {
+              if (err) {
+                console.log("error", err);
+              }
+            });  
+          })
         });
       })
     }
   })
 
-  Coin.estimatedDocumentCount((err, count) => {
-    if (!err && count === 0) {
-
-      source.coins.map((item) => {
-        new Coin({
-          name: item.name,
-        }).save(err => {
-          if (err) {
-            console.log("error", err);
-          }
-        });
-      })
-    }
-  })
 
   Country.estimatedDocumentCount(async (err, count) => {
     if (!err && count == 0) {

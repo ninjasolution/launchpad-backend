@@ -10,7 +10,7 @@ module.exports = {
     },
     {
       id: "0x38",
-      name: "BNB chain",
+      name: "BSC",
       RPC: `https://bsc-dataseed.binance.org/`,
       explorer: "https://bscscan.com/"
     },
@@ -36,18 +36,128 @@ module.exports = {
   coins: [
     {
       name: "USDT",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Polygon"
     },
     {
       name: "BNB",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Polygon"
     },
     {
       name: "ETH",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Polygon"
     },
     {
       name: "AVAX",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Polygon"
     },
     {
       name: "MATIC",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Polygon"
+    },
+    {
+      name: "USDT",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Avalanche"
+    },
+    {
+      name: "BNB",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Avalanche"
+    },
+    {
+      name: "ETH",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Avalanche"
+    },
+    {
+      name: "AVAX",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Avalanche"
+    },
+    {
+      name: "MATIC",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Avalanche"
+    },
+    {
+      name: "USDT",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "BSC"
+    },
+    {
+      name: "BNB",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "BSC"
+    },
+    {
+      name: "ETH",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "BSC"
+    },
+    {
+      name: "AVAX",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "BSC"
+    },
+    {
+      name: "MATIC",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "BSC"
+    },
+    {
+      name: "USDT",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Ethereum"
+    },
+    {
+      name: "BNB",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Ethereum"
+    },
+    {
+      name: "ETH",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Ethereum"
+    },
+    {
+      name: "AVAX",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Ethereum"
+    },
+    {
+      name: "MATIC",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "Ethereum"
+    },
+    {
+      name: "USDT",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "FUJI"
+    },
+    {
+      name: "BNB",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "FUJI"
+    },
+    {
+      name: "ETH",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "FUJI"
+    },
+    {
+      name: "AVAX",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "FUJI"
+    },
+    {
+      name: "MATIC",
+      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      chain: "FUJI"
     }
   ],
   tiers: [

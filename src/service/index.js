@@ -29,9 +29,57 @@ class Service {
         // this.setRootHash("0x506A31614297d4eBA6Baf0021CBFD92aa82F4776", "0x77a1281e1dd2a9a567d1730233bf959665e5f8cbf8d5e5939e2f4c349dd7f8b2")
     }
 
-    async generateStaking(owner, durations, start, ) {
-        this.fundingTokenContract = new ethers.Contract(address, FundingToken.abi, this.wallet)
-        await this.fundingTokenContract.updateHash(hash);
+    async createIGO(name, owner, _igoSetup, _contractSetup, _vestingSetup, _allocations) {
+
+        let igoSetUp = {
+            vestingContract: _igoSetup.igoVestingAddr,
+            paymentToken: _igoSetup.paymentTokenAddr,
+            permit2: permit2Addr, // bsc
+            grandTotal: this.eth(_igoSetup.grandTotal),
+            summedMaxTagCap: _igoSetup.summedMaxTagCap,
+            refundFeeDecimals: 2
+        };
+
+        let contractSetup = {
+            innovator: owner,
+            paymentReceiver: owner,
+            admin: owner,
+            vestedToken: _contractSetup.igoTokenAddr,
+            platformFee: 10,
+            totalTokenOnSale: this.eth(_contractSetup.totalTokenOnSale),
+            gracePeriod: 60,
+            decimals
+        };
+
+        let vestingSetup = {
+            startTime: _vestingSetup.startTime,
+            cliff: _vestingSetup.cliff,
+            duration: _vestingSetup.duration,
+            initialUnlockPercent: _vestingSetup.initialUnlock
+        };
+
+        let tags = []
+        let tagIds = ["phase-1"]
+        let timestamp = await time.latest();
+
+        for(let i=0 ; i<_allocations.length ; i++) {
+
+            tags.push({
+                status: 0,
+                merkleRoot: ethers.utils.formatBytes32String("merkleroot"),
+                startAt: ethers.BigNumber.from(_allocations[i].startTime),
+                endAt: ethers.BigNumber.from(_allocations[i].endTime),
+                maxTagCap: eth(_allocations[i].maxCap)
+            });
+        }
+
+        await this.igoFactoryContract.createIGO(
+            name,
+            igoSetUp,
+            tagIds,
+            tags,
+            contractSetup,
+            vestingSetup);
 
     }
 
@@ -66,10 +114,10 @@ class Service {
             sortPairs: true,
         });
         const root = tree.getHexRoot();
-      
+
         const proofs = leaves.map(leave => tree.getHexProof(leave));
-        
-      
+
+
         return { root, proofs };
     }
 
@@ -77,60 +125,7 @@ class Service {
         return await ethers.utils.verifyMessage(nonce.toString(), signature)
     }
 
-    async createIGO(name, tagIds, tags) {
-
-
-        let igoSetUp = {
-            vestingContract: igoVestingAddr,
-            paymentToken: securityTokenAddr,
-            permit2: permit2Addr, // bsc
-            grandTotal: this.eth(1000000),
-            summedMaxTagCap: 0,
-            refundFeeDecimals: 2
-        }
-
-        let contractSetup = {
-            innovator: this.wallet.address,
-            paymentReceiver: this.wallet.address,
-            admin: this.wallet.address,
-            vestedToken: igoTokenAddr,
-            platformFee: 10,
-            totalTokenOnSale: this.eth(1000000),
-            gracePeriod: 60,
-            decimals: 18
-        }
-
-        let vestingSetup = {
-            startTime: 0,
-            cliff: 10000,
-            duration: 50000,
-            initialUnlockPercent: 1
-        };
-
-        // let tagIds = ["phase-2"]
-
-        // let tags = []
-
-        let latestBlock = await ethers.providers.getDefaultProvider().getBlock("latest");
-        let timestamp = latestBlock.timestamp;
-        // tags.push({
-        //     status: 0,
-        //     merkleRoot: ethers.utils.formatBytes32String("merkleroot"),
-        //     startAt: ethers.BigNumber.from(timestamp + 3600),
-        //     endAt: ethers.BigNumber.from(timestamp + 3600 + 3600 * 24),
-        //     maxTagCap: this.eth(100000)
-        // });
-
-        // approve the spending
-        await this.igoFactoryContract.createIGO(
-            name,
-            igoSetUp,
-            tagIds,
-            tags,
-            contractSetup,
-            vestingSetup);
-
-    }
+   
 
     async getIGODetail(from, count) {
         let result = await this.igoFactoryContract.getIgosDetails(0, 1);
