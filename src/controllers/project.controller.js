@@ -37,21 +37,63 @@ exports.list = (req, res) => {
 
 exports.create = async (req, res) => {
 
-    // await createIGO()
     const _project = req.body;
     _project.status = PROJECT_STATUS_UPLOAD
     const project = new Project(req.body);
-    project.save(async (err, project) => {
+    project.save(async (err, _project) => {
         if (err) {
             console.log(err)
             return res.status(400).send({ message: err, status: "errors" });
         }
 
-        return res.status(200).send({
-            message: RES_MSG_SUCESS,
-            data: project,
-            status: RES_STATUS_SUCCESS,
-        });
+        Project
+            .findOne({ _id: _project._id })
+            .populate("paymentCoin")
+            .populate("createdBy")
+            .populate("chain")
+            .exec(async (err, project) => {
+
+                let summedMaxTagCap = project.funding.allocations.reduce((sum, item) => {
+                    return item.maxCap + sum;
+                }, 0)
+                let igoSetUp = {
+                    igoVestingAddr: project.staking.address,
+                    paymentTokenAddr: project.paymentCoin.address,
+                    grandTotal: project.vesting.amountTotal,
+                    summedMaxTagCap
+                };
+
+                let contractSetup = {
+                    igoTokenAddr: project.token.address,
+                    totalTokenOnSale: project.vesting.amountTotal,
+                    decimals: project.token.decimals
+                };
+
+                let vestingSetup = {
+                    startTime: project.vesting.startTime,
+                    cliff: project.vesting.cliff,
+                    duration: project.vesting.duration,
+                    initialUnlock: project.vesting.initialUnlock
+                };
+                let { igo, vesting } = await createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.allocations)
+
+                project.vesting = {
+                    ...project.vesting,
+                    address: vesting
+                }
+                project.igo = {
+                    ...project.vesting,
+                    address: igo
+                }
+
+                await project.save();
+                return res.status(200).send({
+                    message: RES_MSG_SUCESS,
+                    data: project,
+                    status: RES_STATUS_SUCCESS,
+                });
+            })
+
     });
 
 }

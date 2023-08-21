@@ -73,10 +73,13 @@ module.exports = (connection, autoIncrement) => {
       type: Number,
       ref: "Coin"
     },
-    pool: {
+    funding: {
       type: Object
     },
     vesting: {
+      type: Object
+    },
+    igo: {
       type: Object
     },
     staking: {
