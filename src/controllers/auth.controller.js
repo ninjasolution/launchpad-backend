@@ -142,8 +142,6 @@ exports.signin = async (req, res) => {
         expiresIn: 86400 // 24 hours
       });
 
-      console.log(user)
-
       return res.status(200).send({
         status: RES_MSG_SUCESS,
         data: {

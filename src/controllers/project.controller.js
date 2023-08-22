@@ -199,7 +199,7 @@ exports.approve = async (req, res) => {
                 let igoSetUp = {
                     igoVestingAddr: project.staking.address,
                     paymentTokenAddr: project.paymentCoin.address,
-                    grandTotal: project.vesting.amountTotal,
+                    grandTotal: summedMaxTagCap + ethers.utils.parseEther("1000"),
                     summedMaxTagCap
                 };
     
