@@ -15,10 +15,13 @@ exports.list = (req, res) => {
         populate: "createdBy"
     };
 
-    var condition = {}
+    var condition = { }
     if (req.query.createdBy) {
         condition.createdBy = req.query.createdBy
+    }else {
+        condition.enable = true
     }
+
     Project.paginate(condition, options, (err, projects) => {
 
         if (err) {
@@ -206,7 +209,7 @@ exports.update = async (req, res) => {
 
 exports.approve = async (req, res) => {
 
-    Project.updateOne({ _id: req.query.projectId }, { status: PROJECT_STATUS_UPLOAD })
+    Project.updateOne({ _id: req.query.projectId }, { enable: true })
         .exec(async (err, project) => {
             if (err) {
                 console.log(err)

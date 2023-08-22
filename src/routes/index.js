@@ -49,29 +49,29 @@ router.post("/withdraw", [middlewares.authJwt.verifyToken], userController.withd
 
 //Avatar
 router.get("/avatar/:fileName", fileController.getFile);
-router.delete("/avatar/:fileName",middlewares.authJwt.isAdmin, fileController.delete);
+router.delete("/avatar/:fileName", middlewares.authJwt.isAdmin, fileController.delete);
 
 //Transaction
 router.get("/transaction", middlewares.authJwt.verifyToken, transactionController.index)
 
 //Collection
-router.get("/collection/list", middlewares.authJwt.verifyToken, collectionController.list)
+router.get("/collection/list", collectionController.list)
 
 //Country
-router.get("/country/list", middlewares.authJwt.verifyToken, countryController.list)
+router.get("/country/list", countryController.list)
 
 //Project
-router.get("/project/list", middlewares.authJwt.verifyToken, projectController.list)
+router.get("/project/list", projectController.list)
 router.post("/project/create", middlewares.authJwt.verifyToken, projectController.create)
 router.put("/project", middlewares.authJwt.verifyToken, projectController.update)
 router.put("/project/approve", middlewares.authJwt.verifyToken, projectController.approve)
 router.put("/project/hash", middlewares.authJwt.verifyToken, projectController.pushHash)
-router.get("/project", middlewares.authJwt.verifyToken, projectController.get)
+router.get("/project", projectController.get)
 router.get("/project/get-proof", middlewares.authJwt.verifyToken, projectController.getProof)
 
 //Chain
 router.post("/chain/create", middlewares.authJwt.verifyToken, chainController.create)
-router.get("/chain/list", middlewares.authJwt.verifyToken, chainController.list)
+router.get("/chain/list", chainController.list)
 
 //Coin
 router.post("/coin/create", middlewares.authJwt.verifyToken, coinController.create)

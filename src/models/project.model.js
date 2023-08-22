@@ -49,7 +49,10 @@ module.exports = (connection, autoIncrement) => {
       type: Object,
       default: {}
     },
-    isComingSoon: {
+    openStatus: {
+      type: String
+    },
+    enable: {
       type: Boolean,
       default: false
     },
