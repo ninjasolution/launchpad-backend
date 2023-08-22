@@ -1,5 +1,5 @@
 const { ethers } = require("ethers");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR } = require("../config");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED } = require("../config");
 const db = require("../models");
 const Project = db.project;
 const Investment = db.investment;
@@ -18,8 +18,10 @@ exports.list = (req, res) => {
     var condition = { }
     if (req.query.createdBy) {
         condition.createdBy = req.query.createdBy
-    }else {
-        condition.enable = true
+    } else if(req.query.visible) {
+        condition.visible = req.query.createdBy
+    }  else if(req.query.enable) {
+        condition.enable = req.query.enable
     }
 
     Project.paginate(condition, options, (err, projects) => {
@@ -30,7 +32,7 @@ exports.list = (req, res) => {
         }
 
         if (!projects) {
-            return res.status(404).send({ message: "Project Not found.", status: "errors" });
+            return res.status(404).send({ message: "Project Not found.", status: RES_STATUS_FAIL });
         }
 
         return res.status(200).send({ status: RES_STATUS_SUCCESS, data: projects });
@@ -46,7 +48,7 @@ exports.create = async (req, res) => {
     project.save(async (err, _project) => {
         if (err) {
             console.log(err)
-            return res.status(400).send({ message: err, status: "errors" });
+            return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
         }
 
         Project
@@ -55,41 +57,6 @@ exports.create = async (req, res) => {
             .populate("createdBy")
             .populate("chain")
             .exec(async (err, project) => {
-
-                let summedMaxTagCap = project.funding.allocations.reduce((sum, item) => {
-                    return item.maxCap + sum;
-                }, 0)
-                let igoSetUp = {
-                    igoVestingAddr: project.staking.address,
-                    paymentTokenAddr: project.paymentCoin.address,
-                    grandTotal: project.vesting.amountTotal,
-                    summedMaxTagCap
-                };
-
-                let contractSetup = {
-                    igoTokenAddr: project.token.address,
-                    totalTokenOnSale: project.vesting.amountTotal,
-                    decimals: project.token.decimals
-                };
-
-                let vestingSetup = {
-                    startTime: project.vesting.startTime,
-                    cliff: project.vesting.cliff,
-                    duration: project.vesting.duration,
-                    initialUnlock: project.vesting.initialUnlock
-                };
-                let { igo, vesting } = await createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.allocations)
-
-                project.vesting = {
-                    ...project.vesting,
-                    address: vesting
-                }
-                project.igo = {
-                    ...project.vesting,
-                    address: igo
-                }
-
-                await project.save();
                 return res.status(200).send({
                     message: RES_MSG_SUCESS,
                     data: project,
@@ -109,11 +76,11 @@ exports.get = async (req, res) => {
         .populate("chain")
         .exec((err, project) => {
             if (err) {
-                return res.status(500).send({ message: err, status: "errors" });
+                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             if (!project) {
-                return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: "errors" });
+                return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
             return res.status(200).send({
@@ -131,11 +98,11 @@ exports.getProof = async (req, res) => {
         .findOne({ project: req.query.projectId, address: req.query.address })
         .exec(async (err, investment) => {
             if (err) {
-                return res.status(500).send({ message: err, status: "errors" });
+                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             if (!investment) {
-                return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: "errors" });
+                return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
             Investment
@@ -165,7 +132,7 @@ exports.pushHash = async (req, res) => {
         .exec((err, project) => {
             if (err) {
                 console.log(err)
-                return res.status(400).send({ message: err, status: "errors" });
+                return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             if (!project) {
@@ -176,7 +143,7 @@ exports.pushHash = async (req, res) => {
             project.save(async (err, project) => {
                 if (err) {
                     console.log(err)
-                    return res.status(400).send({ message: err, status: "errors" });
+                    return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
                 }
 
                 return res.status(200).send({
@@ -195,7 +162,7 @@ exports.update = async (req, res) => {
         .exec((err, project) => {
             if (err) {
                 console.log(err)
-                return res.status(500).send({ message: err, status: "errors" });
+                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             return res.status(200).send({
@@ -209,43 +176,65 @@ exports.update = async (req, res) => {
 
 exports.approve = async (req, res) => {
 
-    Project.updateOne({ _id: req.query.projectId }, { enable: true })
-        .exec(async (err, project) => {
+    Project.updateOne({ _id: req.query.projectId }, { enable: true, visible: PROJECT_VISIBLE_NOT_STARTED })
+        .exec(async (err) => {
             if (err) {
                 console.log(err)
-                return res.status(500).send({ message: err, status: "errors" });
+                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            let owner = project.wallet;
-            let name = project.projectName;
-            let igoSetup = {
-                igoVestingAddr: project.vesting.address,
-                paymentTokenAddr: project.paymentToken.address,
-                grandTotal: project.grandTotal,
-                summedMaxTagCap: project.summedMaxTagCap
-            }
+            Project.findOne({_id: req.query.projectId})
+            .populate("paymentCoin")
+            .populate("chain")
+            .populate("createdBy")
+            .exec(async (err, project) => {
 
-            let contractSetup = {
-                igoTokenAddr: project.token.address,
-                totalTokenOnSale: project.totalTokenOnSale
-            }
-
-            let vestingSetup = {
-                startTime: project.vesting.startTime,
-                cliff: project.vesting.cliff,
-                duration: project.vesting.duration,
-                initialUnlock: project.vesting.initialUnlock
-            }
-
-            let allocations = project.allocations;
-
-            await service.createIGO(name, owner, igoSetup, contractSetup, vestingSetup, allocations);
-
-            return res.status(200).send({
-                message: RES_MSG_SUCESS,
-                data: project,
-                status: RES_STATUS_SUCCESS,
-            });
+                if (err) {
+                    console.log(err)
+                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                }
+                let summedMaxTagCap = project.funding.allocations.reduce((sum, item) => {
+                    return item.maxCap + sum;
+                }, 0)
+                let igoSetUp = {
+                    igoVestingAddr: project.staking.address,
+                    paymentTokenAddr: project.paymentCoin.address,
+                    grandTotal: project.vesting.amountTotal,
+                    summedMaxTagCap
+                };
+    
+                let contractSetup = {
+                    igoTokenAddr: project.token.address,
+                    totalTokenOnSale: project.vesting.amountTotal,
+                    decimals: project.token.decimals
+                };
+    
+                let vestingSetup = {
+                    startTime: project.vesting.startTime,
+                    cliff: project.vesting.cliff,
+                    duration: project.vesting.duration,
+                    initialUnlock: project.vesting.initialUnlock
+                };
+                let { igo, vesting } = await createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.allocations)
+    
+                project.vesting = {
+                    ...project.vesting,
+                    address: vesting
+                }
+                project.igo = {
+                    ...project.vesting,
+                    address: igo
+                }
+    
+                await project.save();
+    
+                return res.status(200).send({
+                    message: RES_MSG_SUCESS,
+                    data: project,
+                    status: RES_STATUS_SUCCESS,
+                });
+            })
+            
         })
 
 }
@@ -257,7 +246,7 @@ exports.getSnapshot = async (req, res) => {
 
             if (err) {
                 console.log(err)
-                return res.status(400).send({ message: err, status: "errors" });
+                return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             if (!project) {
@@ -279,7 +268,7 @@ exports.getWhiteList = async (req, res) => {
         .exec((err, investments) => {
             if (err) {
                 console.log(err)
-                return res.status(400).send({ message: err, status: "errors" });
+                return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             if (!investments) {

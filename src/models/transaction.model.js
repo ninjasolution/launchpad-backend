@@ -9,18 +9,26 @@ module.exports = (connection, autoIncrement) => {
       type: String,
       enum: ["Deposit", "Withdraw", "Swap", "Server Error"],
     },
-    amount: Number,
-    currency: {
+    platform: {
       type: String,
-      enum: ["USD", "CHF", "EUR", "ETH", "BTC", "BNB", "USDT", "USDC", "BUSD", "AVAX"],    
+      enum: ["IDO Staking", "IGO Staking", "INO"],
+    },
+    project: {
+      type: Number,
+      ref: "Project",
+    },
+    amount: Number,
+    Coin: {
+      type: Number,
+      ref: "Coin",    
     },
     paymentMethod: {
       type: String,
       enum: ["Stripe", "Paypal", "Crypto"],
     },
-    network: {
-      type: String,
-      enum: ["BSC", "ETH", "BTC", "Avalanche"],
+    chain: {
+      type: Number,
+      ref: "Chain",
     },
     status: {
       type: String,

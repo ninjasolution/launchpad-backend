@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const timestamps = require('mongoose-timestamp');
 const mongoosePaginate = require('mongoose-paginate-v2');
+const { PROJECT_VISIBLE_NOT_DEPLOYED, PROJECT_STATUS_UPLOAD } = require("../config");
 
 module.exports = (connection, autoIncrement) => {
 
@@ -33,13 +34,13 @@ module.exports = (connection, autoIncrement) => {
       default: {}
     },
     startTime: {
-      type: Date,
+      type: Number,
     },
     endTime: {
-      type: Date,
+      type: Number,
     },
     inoLaunchDate: {
-      type: Date
+      type: Number
     },
     teams: {
       type: Object,
@@ -49,21 +50,25 @@ module.exports = (connection, autoIncrement) => {
       type: Object,
       default: {}
     },
-    openStatus: {
-      type: String
+    visible: {
+      type: String,
+      default: PROJECT_VISIBLE_NOT_DEPLOYED
     },
     enable: {
       type: Boolean,
       default: false
     },
     status: {
-      type: String
+      type: String,
+      default: PROJECT_STATUS_UPLOAD
     },
     price: {
       type: Number,
+      default: 0
     },
     grandTotal: {
       type: Number,
+      default: 0
     },
     rootHash: {
       type: String,
@@ -77,23 +82,25 @@ module.exports = (connection, autoIncrement) => {
       ref: "Coin"
     },
     funding: {
-      type: Object
+      type: Object,
+      default: {}
     },
     vesting: {
-      type: Object
+      type: Object,
+      default: {}
     },
     igo: {
-      type: Object
+      type: Object,
+      default: {}
     },
     staking: {
-      type: Object
+      type: Object,
+      default: {}
     },
     snapshot: {
-      type: Object
+      type: Object,
+      default: {}
     },
-    allocations: [{
-      type: Object
-    }],
     collections: [{
       type: Number,
       ref: "Collection",
