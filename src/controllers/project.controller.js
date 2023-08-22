@@ -337,11 +337,11 @@ exports.genSnapshot = async (req, res) => {
                                     tier15: 0,
                                     public: 0
                                 },
-                                totalSfundUser: 0
+                                totalUser: 0
                             }
 
                             for (let i = 0; i < investments.length; i++) {
-                                snapshot.totalSfundUser += 1;
+                                snapshot.totalUser += 1;
                                 for (let j = tiers.length - 1; j >= 0; j--) {
                                     if (tiers[j].minAmount <= investments[i].amount && tiers[j].maxAmount >= investments[i].amount && tiers[j].duration < investments[i].duration) {
                                         snapshot.users[`tier${j}`] += 1;
