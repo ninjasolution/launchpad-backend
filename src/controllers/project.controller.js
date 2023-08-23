@@ -1,8 +1,10 @@
 const { ethers } = require("ethers");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED } = require("../config");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO } = require("../config");
 const db = require("../models");
 const Project = db.project;
-const Investment = db.investment;
+const WhiteList = db.whiteList;
+const User = db.user;
+const Transaction = db.transaction;
 const Tier = db.tier;
 const { createIGO, generateLeaves, generateMerkleRootAndProof } = require("../service");
 const service = require("../service");
@@ -15,12 +17,12 @@ exports.list = (req, res) => {
         populate: "createdBy"
     };
 
-    var condition = { }
+    var condition = {}
     if (req.query.createdBy) {
         condition.createdBy = req.query.createdBy
-    } else if(req.query.visible) {
+    } else if (req.query.visible) {
         condition.visible = req.query.createdBy
-    }  else if(req.query.enable) {
+    } else if (req.query.enable) {
         condition.enable = req.query.enable
     }
 
@@ -94,36 +96,124 @@ exports.get = async (req, res) => {
 
 exports.getProof = async (req, res) => {
 
-    Investment
-        .findOne({ project: req.query.projectId, address: req.query.address })
-        .exec(async (err, investment) => {
+
+    Project.findOne({ _id: req.params.projectId })
+        .exec((err, project) => {
             if (err) {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            if (!investment) {
+            if (!project) {
                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
-            Investment
-                .find({ project: req.query.projectId })
-                .exec(async (err, investments) => {
+            User.findOne({_id: req.params.userId})
+            .exec((err, user) => {
+                if (err) {
+                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                }
+    
+                if (!user) {
+                    return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+                }   
 
-                    let leaves = generateLeaves(investments.map((item) => ({ address: item.address, amount: item.percent })))
-                    let { root, proofs } = generateMerkleRootAndProof(leaves);
+                let tag = project.funding.tags.find((tag => tag.name == req.params.tagId));
 
-                    let amount = ethers.utils.parseEther(investment.amount)
-                    let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
-                    console.log(root, tier.percent);
+                if(tag.accessType == TAG_TYPE_PUBLIC) {
+                    Transaction
+                    .find({ project: req.params.projectId, platform: PLATFORM_TYPE_STAKING_IDO, user: req.params.userId })
+                    .exec(async (err, transactions) => {
+    
+                        if (err) {
+                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                        }
+    
+                        if (!transactions) {
+                            return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+                        }
 
+    
+                        let allocations = []
+    
+                        let amount = transactions.reduce((sum, item) => {
+                            return sum + item.amount
+                        }, 0);
 
-                    return res.status(200).send({
-                        message: RES_MSG_SUCESS,
-                        data: { root, proof: proofs[0], percent: tier.percent * PERCENT_DIVISOR },
-                        status: RES_STATUS_SUCCESS,
-                    });
-                })
+                        let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
+                        allocations.push({
+                            tagId: req.params.tagId,
+                            account: user.wallet,
+                            maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()),
+                            refundFee: 40,
+                            igoTokenPerPaymentToken: tag.price,
+                        }, {
+                            tagId: req.params.tagId,
+                            account: user.wallet,
+                            maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()),
+                            refundFee: 40,
+                            igoTokenPerPaymentToken: tag.price,
+                        })
+    
+                        // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
+                        let leaves = service.generateAllocLeaves(allocations)
+                        let { root, proofs } = generateMerkleRootAndProof(leaves);
+    
+    
+                        return res.status(200).send({
+                            message: RES_MSG_SUCESS,
+                            data: { proof: proofs[0], tier },
+                            status: RES_STATUS_SUCCESS,
+                        });
+                    })
+                }else {
+                    WhiteList
+                    .find({ project: req.params.projectId })
+                    .exec(async (err, whiteLists) => {
+    
+                        if (err) {
+                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                        }
+    
+                        if (!whiteLists) {
+                            return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+                        }
+    
+                        let allocations = []
+    
+                        let count = whiteLists.length;
+                        let amount;
+                        for (let i = 0; i < count; i++) {
+                            let amount = ethers.utils.parseEther(whiteLists[0].amount)
+                            let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
+                            allocations.push({
+                                tagId: req.params.tagId,
+                                account: user.wallet,
+                                maxAllocation: ethers.utils.parseEther(project.token.totalSupply * tier.percent / 100),
+                                refundFee: 40,
+                                igoTokenPerPaymentToken: tag.maxAllocation.price,
+                            })
+                        }
+    
+                        // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
+                        let leaves = generateLeaves(allocations)
+                        let { root, proofs } = generateMerkleRootAndProof(leaves);
+    
+                        let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
+    
+                        return res.status(200).send({
+                            message: RES_MSG_SUCESS,
+                            data: { root, proof: proofs[0], percent: tier.percent * PERCENT_DIVISOR },
+                            status: RES_STATUS_SUCCESS,
+                        });
+                    })
+                }
+    
+            })
+
+           
+            
         })
+
 }
 
 exports.pushHash = async (req, res) => {
@@ -183,58 +273,58 @@ exports.approve = async (req, res) => {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            Project.findOne({_id: req.query.projectId})
-            .populate("paymentCoin")
-            .populate("chain")
-            .populate("createdBy")
-            .exec(async (err, project) => {
+            Project.findOne({ _id: req.query.projectId })
+                .populate("paymentCoin")
+                .populate("chain")
+                .populate("createdBy")
+                .exec(async (err, project) => {
 
-                if (err) {
-                    console.log(err)
-                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                }
-                let summedMaxTagCap = project.funding.allocations.reduce((sum, item) => {
-                    return item.maxCap + sum;
-                }, 0)
-                let igoSetUp = {
-                    igoVestingAddr: project.staking.address,
-                    paymentTokenAddr: project.paymentCoin.address,
-                    grandTotal: summedMaxTagCap + ethers.utils.parseEther("1000"),
-                    summedMaxTagCap
-                };
-    
-                let contractSetup = {
-                    igoTokenAddr: project.token.address,
-                    totalTokenOnSale: project.vesting.amountTotal,
-                    decimals: project.token.decimals
-                };
-    
-                let vestingSetup = {
-                    startTime: project.vesting.startTime,
-                    cliff: project.vesting.cliff,
-                    duration: project.vesting.duration,
-                    initialUnlock: project.vesting.initialUnlock
-                };
-                let { igo, vesting } = await createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.allocations)
-    
-                project.vesting = {
-                    ...project.vesting,
-                    address: vesting
-                }
-                project.igo = {
-                    ...project.vesting,
-                    address: igo
-                }
-    
-                await project.save();
-    
-                return res.status(200).send({
-                    message: RES_MSG_SUCESS,
-                    data: project,
-                    status: RES_STATUS_SUCCESS,
-                });
-            })
-            
+                    if (err) {
+                        console.log(err)
+                        return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                    }
+                    let summedMaxTagCap = project.funding.allocations.reduce((sum, item) => {
+                        return item.maxCap + sum;
+                    }, 0)
+                    let igoSetUp = {
+                        igoVestingAddr: project.staking.address,
+                        paymentTokenAddr: project.paymentCoin.address,
+                        grandTotal: summedMaxTagCap + ethers.utils.parseEther("1000"),
+                        summedMaxTagCap
+                    };
+
+                    let contractSetup = {
+                        igoTokenAddr: project.token.address,
+                        totalTokenOnSale: project.vesting.amountTotal,
+                        decimals: project.token.decimals
+                    };
+
+                    let vestingSetup = {
+                        startTime: project.vesting.startTime,
+                        cliff: project.vesting.cliff,
+                        duration: project.vesting.duration,
+                        initialUnlock: project.vesting.initialUnlock
+                    };
+                    let { igo, vesting } = await createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.allocations)
+
+                    project.vesting = {
+                        ...project.vesting,
+                        address: vesting
+                    }
+                    project.igo = {
+                        ...project.vesting,
+                        address: igo
+                    }
+
+                    await project.save();
+
+                    return res.status(200).send({
+                        message: RES_MSG_SUCESS,
+                        data: project,
+                        status: RES_STATUS_SUCCESS,
+                    });
+                })
+
         })
 
 }
@@ -264,20 +354,20 @@ exports.getSnapshot = async (req, res) => {
 
 exports.getWhiteList = async (req, res) => {
 
-    Investment.find({ project: req.query.projectId })
-        .exec((err, investments) => {
+    WhiteList.find({ project: req.query.projectId })
+        .exec((err, whiteLists) => {
             if (err) {
                 console.log(err)
                 return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            if (!investments) {
+            if (!whiteLists) {
                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
-                data: investments,
+                data: whiteLists,
                 status: RES_STATUS_SUCCESS,
             });
         })
@@ -307,14 +397,14 @@ exports.genSnapshot = async (req, res) => {
                     if (!tiers) {
                         return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     }
-                    Investment.find({ project: req.query.projectId })
-                        .exec((err, investments) => {
+                    WhiteList.find({ project: req.query.projectId })
+                        .exec((err, whiteLists) => {
                             if (err) {
                                 console.log(err)
                                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                             }
 
-                            if (!investments) {
+                            if (!whiteLists) {
                                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                             }
                             let snapshot = {
@@ -340,10 +430,10 @@ exports.genSnapshot = async (req, res) => {
                                 totalUser: 0
                             }
 
-                            for (let i = 0; i < investments.length; i++) {
+                            for (let i = 0; i < whiteLists.length; i++) {
                                 snapshot.totalUser += 1;
                                 for (let j = tiers.length - 1; j >= 0; j--) {
-                                    if (tiers[j].minAmount <= investments[i].amount && tiers[j].maxAmount >= investments[i].amount && tiers[j].duration < investments[i].duration) {
+                                    if (tiers[j].minAmount <= whiteLists[i].amount && tiers[j].maxAmount >= whiteLists[i].amount && tiers[j].duration < whiteLists[i].duration) {
                                         snapshot.users[`tier${j}`] += 1;
                                         break;
                                     }

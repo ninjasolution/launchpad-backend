@@ -8,7 +8,7 @@ const { RES_STATUS_FAIL, RES_STATUS_SUCCESS, PROJECT_STATUS_FILEHASH, PROJECT_ST
 const { tiers } = require('../config/static.source');
 const User = db.user;
 const Project = db.project;
-const Investment = db.investment;
+const WhiteList = db.whiteList;
 
 const storage = multer.diskStorage({
 
@@ -66,24 +66,25 @@ exports.csvUploader = (req, res) => {
                         project.csv = fileName;
                         project.status = PROJECT_STATUS_SNAPSHOT;
                         await project.save()
-                        var rows = [];
+                        var whiteLists = [];
                         fs.createReadStream(`./files/${req.file.originalname}`)
                         .pipe(csv())
                         .on('data', async (row) => {
 
                             let tier = tiers.find(item => item.minAmount < row.amount && item.maxAmount > row.amount);
 
-                            rows.push({
+                            whiteLists.push({
                                 address: row.address,
                                 amount: row.amount,
                                 duration: row.duration,
                                 percent: tier.percent * PERCENT_DIVISOR,
                                 project: project._id
                             })
+                           
                         })
                         .on('end', () => {
                           console.log('CSV file successfully processed');
-                          Investment.insertMany(rows)
+                          WhiteList.insertMany(rows)
                           .then(() => {
                             return res.status(200).send({status: RES_STATUS_SUCCESS, data: RES_MSG_SAVE_SUCCESS});
                           }).catch(err => {

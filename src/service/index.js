@@ -26,6 +26,21 @@ class Service {
 
         this.igoDeployerContract = new ethers.Contract(igoDeployerAddr, IGODeployer.abi, this.wallet)
 
+        let leaves = this.generateAllocLeaves([{
+            tagId: "111",
+            account: "0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0",
+            maxAllocation: "10000000000",
+            refundFee: "23",
+            igoTokenPerPaymentToken: "23"
+        }, {
+            tagId: "111",
+            account: "0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0",
+            maxAllocation: "10000000000",
+            refundFee: "23",
+            igoTokenPerPaymentToken: "23"
+        }])
+        console.log(leaves)
+        console.log(this.generateMerkleRootAndProof(leaves, 0))
         // this.setRootHash("0x506A31614297d4eBA6Baf0021CBFD92aa82F4776", "0x77a1281e1dd2a9a567d1730233bf959665e5f8cbf8d5e5939e2f4c349dd7f8b2")
     }
 
@@ -41,7 +56,7 @@ class Service {
                 summedMaxTagCap: _igoSetup.summedMaxTagCap,
                 refundFeeDecimals: 2
             };
-    
+
             let contractSetup = {
                 innovator: owner,
                 paymentReceiver: owner,
@@ -52,19 +67,19 @@ class Service {
                 gracePeriod: 60,
                 decimals: _contractSetup.decimals
             };
-    
+
             let vestingSetup = {
                 startTime: _vestingSetup.startTime,
                 cliff: _vestingSetup.cliff,
                 duration: _vestingSetup.duration,
                 initialUnlockPercent: _vestingSetup.initialUnlock
             };
-    
+
             let tags = []
             let tagIds = []
-    
+
             for (let i = 0; i < _allocations.length; i++) {
-    
+
                 tags.push({
                     status: 0,
                     merkleRoot: ethers.utils.formatBytes32String("merkleroot"),
@@ -74,7 +89,7 @@ class Service {
                 });
                 tagIds.push(_allocations.title);
             }
-    
+
             let igoTx = await this.igoFactoryContract.createIGO(
                 name,
                 igoSetUp,
@@ -83,15 +98,15 @@ class Service {
                 contractSetup,
                 vestingSetup);
             const igoReceipt = await igoTx.wait();
-    
+
             const event = igoReceipt.events[5];
             console.log(event.args[1], event.args[2], "events");
-    
+
             return {
                 igo: event.args[1],
                 vesting: event.args[2]
             }
-        }catch {
+        } catch {
             return {
                 igo: null,
                 vesting: null
@@ -125,6 +140,33 @@ class Service {
             )
         );
     }
+
+    generateAllocLeaves(allocations) {
+
+        let rawEncoded;
+        let leaves = [];
+        let length = allocations.length;
+
+        for (let i = 0; i < length; ++i) {
+            rawEncoded = ethers.utils.defaultAbiCoder.encode(
+                [
+                    'Allocation(string tagId, address account, uint256 maxAllocation, uint256 refundFee, uint256 igoTokenPerPaymentToken)',
+                ],
+                [
+                    [
+                        allocations[i].tagId,
+                        allocations[i].account,
+                        allocations[i].maxAllocation,
+                        allocations[i].refundFee,
+                        allocations[i].igoTokenPerPaymentToken,
+                    ],
+                ]
+            );
+            leaves.push(ethers.utils.keccak256(rawEncoded));
+        }
+        return leaves;
+    }
+
 
     generateMerkleRootAndProof(leaves) {
         const tree = new MerkleTree(leaves, ethers.utils.keccak256, {

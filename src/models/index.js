@@ -27,7 +27,7 @@ db.collection = require("./collection.model")(db.connection, autoIncrement);
 db.chain = require("./chain.model")(db.connection, autoIncrement);
 db.coin = require("./coin.model")(db.connection, autoIncrement);
 db.country = require("./country.model")(db.connection, autoIncrement);
-db.investment = require("./investment.model")(db.connection, autoIncrement);
+db.whiteList = require("./whiteList.model")(db.connection, autoIncrement);
 db.tier = require("./tier.model")(db.connection, autoIncrement);
 db.nonce = require("./nonce.model")(db.connection, autoIncrement);
 

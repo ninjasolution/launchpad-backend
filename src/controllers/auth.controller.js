@@ -112,7 +112,7 @@ exports.signin = async (req, res) => {
           const user = new User({
             wallet: address,
             nonce: req.body.nonce,
-            role: role._id
+            role: role._id,
           });
           user.save(async (err, nUser) => {
             if (err) {

@@ -67,7 +67,7 @@ router.put("/project", middlewares.authJwt.verifyToken, projectController.update
 router.put("/project/approve", middlewares.authJwt.verifyToken, projectController.approve)
 router.put("/project/hash", middlewares.authJwt.verifyToken, projectController.pushHash)
 router.get("/project", projectController.get)
-router.get("/project/get-proof", middlewares.authJwt.verifyToken, projectController.getProof)
+router.get("/project/get-proof/:projectId/:tagId/:userId", middlewares.authJwt.verifyToken, projectController.getProof)
 
 //Chain
 router.post("/chain/create", middlewares.authJwt.verifyToken, chainController.create)

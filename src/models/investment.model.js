@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 module.exports = (connection, autoIncrement) => {
 
-  const InvestmentSchema = new mongoose.Schema({
+  const WhiteListSchema = new mongoose.Schema({
     address: {
       type: String,
     },
@@ -22,12 +22,12 @@ module.exports = (connection, autoIncrement) => {
     }
   });
   
-  InvestmentSchema.plugin(autoIncrement.plugin, "Investment")  
+  WhiteListSchema.plugin(autoIncrement.plugin, "WhiteList")  
 
-  const Investment = connection.model(
-    "Investment",
-    InvestmentSchema
+  const WhiteList = connection.model(
+    "WhiteList",
+    WhiteListSchema
   );
 
-  return Investment;
+  return WhiteList;
 }

@@ -164,103 +164,103 @@ module.exports = {
     {
       id: 0,
       level: 0,
-      minAmount: "1250000000000000000000",
-      maxAmount: "25000000000000000000000",
+      minAmount: "1250",
+      maxAmount: "25000",
       duration: 2592000,
       percent: 0.05
     },
     {
       id: 1,
       level: 0,
-      minAmount: "1250000000000000000000",
-      maxAmount: "25000000000000000000000",
+      minAmount: "1250",
+      maxAmount: "25000",
       duration: 7776000,
       percent: 0.1
     },
     {
       id: 2,
       level: 0,
-      minAmount: "1250000000000000000000",
-      maxAmount: "25000000000000000000000",
+      minAmount: "1250",
+      maxAmount: "25000",
       duration: 15552000,
       percent: 0.3
     },
     {
       id: 3,
       level: 0,
-      minAmount: "1250000000000000000000",
-      maxAmount: "100000000000000000000000",
+      minAmount: "1250",
+      maxAmount: "100000",
       duration: 23328000,
       percent: 0.5
     },
     {
       id: 4,
       level: 1,
-      minAmount: "25000000000000000000001",
-      maxAmount: "1250000000000000000000",
+      minAmount: "25001",
+      maxAmount: "1250",
       duration: 2592000,
       percent: 0.5
     },
     {
       id: 5,
       level: 1,
-      minAmount: "25000000000000000000001",
-      maxAmount: "100000000000000000000000",
+      minAmount: "25001",
+      maxAmount: "100000",
       duration: 7776000,
       percent: 1
     },
     {
       id: 6,
       level: 1,
-      minAmount: "25000000000000000000001",
-      maxAmount: "100000000000000000000000",
+      minAmount: "25001",
+      maxAmount: "100000",
       duration: 15552000,
       percent: 1.2
     },
     {
       id: 7,
       level: 1,
-      minAmount: "25000000000000000000001",
-      maxAmount: "100000000000000000000000",
+      minAmount: "25001",
+      maxAmount: "100000",
       duration: 23328000,
       percent: 1.5
     },
     {
       id: 8,
       level: 2,
-      minAmount: "100000000000000000000001",
-      maxAmount: "500000000000000000000000",
+      minAmount: "100001",
+      maxAmount: "500000",
       duration: 2592000,
       percent: 1.5
     },
     {
       id: 9,
       level: 2,
-      minAmount: "100000000000000000000001",
-      maxAmount: "500000000000000000000000",
+      minAmount: "100001",
+      maxAmount: "500000",
       duration: 7776000,
       percent: 2
     },
     {
       id: 10,
       level: 2,
-      minAmount: "100000000000000000000001",
-      maxAmount: "500000000000000000000000",
+      minAmount: "100001",
+      maxAmount: "500000",
       duration: 15552000,
       percent: 2.5
     },
     {
       id: 11,
       level: 2,
-      minAmount: "100000000000000000000001",
-      maxAmount: "500000000000000000000000",
+      minAmount: "100001",
+      maxAmount: "500000",
       duration: 23328000,
       percent: 3
     },
     {
       id: 12,
       level: 3,
-      minAmount: "500000000000000000000001",
+      minAmount: "500001",
       maxAmount: "9999999999999999999999999999999",
       duration: 2592000,
       percent: 3
@@ -268,7 +268,7 @@ module.exports = {
     {
       id: 13,
       level: 3,
-      minAmount: "500000000000000000000001",
+      minAmount: "500001",
       maxAmount: "9999999999999999999999999999999",
       duration: 7776000,
       percent: 4
@@ -276,7 +276,7 @@ module.exports = {
     {
       id: 14,
       level: 3,
-      minAmount: "500000000000000000000001",
+      minAmount: "500001",
       maxAmount: "9999999999999999999999999999999",
       duration: 15552000,
       percent: 5
@@ -284,7 +284,7 @@ module.exports = {
     {
       id: 15,
       level: 3,
-      minAmount: "500000000000000000000001",
+      minAmount: "500001",
       maxAmount: "9999999999999999999999999999999",
       duration: 23328000,
       percent: 6
