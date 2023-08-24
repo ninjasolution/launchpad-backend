@@ -20,7 +20,7 @@ class Service {
         this.igoSecContract = new ethers.Contract(securityTokenAddr, ERC20.abi, this.wallet)
         this.igoTokenContract = new ethers.Contract(igoTokenAddr, ERC20.abi, this.wallet)
         this.igoDeployerContract = new ethers.Contract(igoDeployerAddr, IGODeployer.abi, this.wallet)
-        this.test()
+        // this.test()
     }
 
     async test() {
