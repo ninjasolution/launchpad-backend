@@ -56,7 +56,6 @@ app.use('/api', indexRouter);
 
 
 
-
 const db = require("./src/models");
 const Role = db.role;
 const User = db.user;

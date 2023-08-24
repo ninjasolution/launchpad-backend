@@ -33,13 +33,13 @@ module.exports = (connection, autoIncrement) => {
       type: Object,
       default: {}
     },
-    startTime: {
+    startAt: {
       type: Number,
     },
-    endTime: {
+    endAt: {
       type: Number,
     },
-    inoLaunchDate: {
+    inoLaunchAt: {
       type: Number
     },
     teams: {

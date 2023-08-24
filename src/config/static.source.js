@@ -35,128 +35,128 @@ module.exports = {
   ],
   coins: [
     {
-      name: "USDT",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      name: "AUDCT",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Polygon"
     },
     {
       name: "BNB",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Polygon"
     },
     {
       name: "ETH",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Polygon"
     },
     {
       name: "AVAX",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Polygon"
     },
     {
       name: "MATIC",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Polygon"
     },
     {
-      name: "USDT",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      name: "AUDCT",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Avalanche"
     },
     {
       name: "BNB",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Avalanche"
     },
     {
       name: "ETH",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Avalanche"
     },
     {
       name: "AVAX",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Avalanche"
     },
     {
       name: "MATIC",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Avalanche"
     },
     {
-      name: "USDT",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      name: "AUDCT",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "BSC"
     },
     {
       name: "BNB",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "BSC"
     },
     {
       name: "ETH",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "BSC"
     },
     {
       name: "AVAX",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "BSC"
     },
     {
       name: "MATIC",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "BSC"
     },
     {
-      name: "USDT",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      name: "AUDCT",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Ethereum"
     },
     {
       name: "BNB",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Ethereum"
     },
     {
       name: "ETH",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Ethereum"
     },
     {
       name: "AVAX",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Ethereum"
     },
     {
       name: "MATIC",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "Ethereum"
     },
     {
-      name: "USDT",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      name: "AUDCT",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "FUJI"
     },
     {
       name: "BNB",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "FUJI"
     },
     {
       name: "ETH",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "FUJI"
     },
     {
       name: "AVAX",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "FUJI"
     },
     {
       name: "MATIC",
-      address: "0xa21aBD52Ec7A7b31D085BbbCD487B9ccf414bCe8",
+      address: "0xF9BD80c0b79285313F67834Ef45fBA23bb5cc3cB",
       chain: "FUJI"
     }
   ],

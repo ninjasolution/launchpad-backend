@@ -7,96 +7,174 @@ const IGO = require("../abis/IGO.json")
 const IGOVesting = require("../abis/IGOVesting.json")
 const { ethers } = require("ethers");
 const { MerkleTree } = require("merkletreejs");
-const keccak256 = require("keccak256");
+const db = require("../models");
 
 require('dotenv').config();
 
 class Service {
 
     constructor() {
-
-        const provider = new ethers.providers.JsonRpcProvider(RPC)
-        this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider)
-
-        this.igoSecContract = new ethers.Contract(securityTokenAddr, ERC20.abi, this.wallet)
-
-        this.igoTokenContract = new ethers.Contract(igoTokenAddr, ERC20.abi, this.wallet)
-
+        this.provider = new ethers.providers.JsonRpcProvider(RPC)
+        this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider)
         this.igoFactoryContract = new ethers.Contract(igoFactoryAddr, IGOFactory.abi, this.wallet)
-
+        this.igoSecContract = new ethers.Contract(securityTokenAddr, ERC20.abi, this.wallet)
+        this.igoTokenContract = new ethers.Contract(igoTokenAddr, ERC20.abi, this.wallet)
         this.igoDeployerContract = new ethers.Contract(igoDeployerAddr, IGODeployer.abi, this.wallet)
-
-        let leaves = this.generateAllocLeaves([{
-            tagId: "111",
-            account: "0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0",
-            maxAllocation: "10000000000",
-            refundFee: "23",
-            igoTokenPerPaymentToken: "23"
-        }, {
-            tagId: "111",
-            account: "0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0",
-            maxAllocation: "10000000000",
-            refundFee: "23",
-            igoTokenPerPaymentToken: "23"
-        }])
-        console.log(leaves)
-        console.log(this.generateMerkleRootAndProof(leaves, 0))
-        // this.setRootHash("0x506A31614297d4eBA6Baf0021CBFD92aa82F4776", "0x77a1281e1dd2a9a567d1730233bf959665e5f8cbf8d5e5939e2f4c349dd7f8b2")
+        this.test()
     }
 
-    async createIGO(name, owner, _igoSetup, _contractSetup, _vestingSetup, _allocations) {
+    async test() {
 
+        let Project = db.project;
+        Project.findOne({ _id: 14 })
+            .populate("paymentCoin")
+            .populate("chain")
+            .populate("createdBy")
+            .exec(async (err, project) => {
+
+
+                let summedMaxTagCap = project.funding.tags.reduce((sum, item) => {
+                    return Number.parseInt(item.maxCap) + Number.parseInt(sum);
+                }, 0)
+                let igoSetUp = {
+                    igoVesting: project.paymentCoin.address,
+                    paymentToken: project.paymentCoin.address,
+                    grandTotal: ethers.utils.parseEther((10 + Number.parseInt(summedMaxTagCap)).toString()),
+                    summedMaxTagCap: ethers.utils.parseEther((Number.parseInt(summedMaxTagCap) + 100).toString())
+                };
+
+                let contractSetup = {
+                    igoToken: project.token.address,
+                    totalTokenOnSale: ethers.utils.parseEther(project.vesting.amountTotal),
+                    decimals: project.token.decimals
+                };
+
+                let vestingSetup = {
+                    startTime: project.vesting.startAt,
+                    cliff: project.vesting.cliff * 3600 * 24,
+                    duration: project.vesting.duration * 3600 * 24,
+                    initialUnlockPercent: project.vesting.initialUnlockPercent
+                };
+                let { igo, vesting } = await this.createIGO("project.projectName", project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.tags)
+
+                if (!igo) {
+                    console.log("================")
+                }
+                project.vesting = {
+                    ...project.vesting,
+                    address: vesting
+                }
+                project.igo = {
+                    ...project.igo,
+                    address: igo
+                }
+                project = await project.save();
+
+
+            })
+    }
+
+    async createIGO(name, owner, _igoSetup, _contractSetup, _vestingSetup, _tags) {
         try {
 
             let igoSetUp = {
-                vestingContract: _igoSetup.igoVestingAddr,
-                paymentToken: _igoSetup.paymentTokenAddr,
-                permit2: permit2Addr, // bsc
-                grandTotal: this.eth(_igoSetup.grandTotal),
-                summedMaxTagCap: _igoSetup.summedMaxTagCap,
-                refundFeeDecimals: 2
+                "vestingContract": _igoSetup.paymentToken,
+                "paymentToken": _igoSetup.paymentToken,
+                "permit2": permit2Addr, // bsc
+                "grandTotal": _igoSetup.grandTotal,
+                "summedMaxTagCap": _igoSetup.summedMaxTagCap,
+                "refundFeeDecimals": "2"
             };
 
             let contractSetup = {
-                innovator: owner,
-                paymentReceiver: owner,
-                admin: owner,
-                vestedToken: _contractSetup.igoTokenAddr,
-                platformFee: 10,
-                totalTokenOnSale: this.eth(_contractSetup.totalTokenOnSale),
-                gracePeriod: 60,
-                decimals: _contractSetup.decimals
+                "paymentReceiver": owner,
+                "admin": owner,
+                "vestedToken": _contractSetup.igoToken,
+                "platformFee": "10",
+                "totalTokenOnSale": _contractSetup.totalTokenOnSale,
+                "gracePeriod": "60",
+                "decimals": _contractSetup.decimals
             };
 
             let vestingSetup = {
-                startTime: _vestingSetup.startTime,
-                cliff: _vestingSetup.cliff,
-                duration: _vestingSetup.duration,
-                initialUnlockPercent: _vestingSetup.initialUnlock
+                "startTime": _vestingSetup.startTime,
+                "cliff": _vestingSetup.cliff,
+                "duration": _vestingSetup.duration,
+                "initialUnlockPercent": _vestingSetup.initialUnlockPercent
             };
 
             let tags = []
             let tagIds = []
 
-            for (let i = 0; i < _allocations.length; i++) {
+            for (let i = 0; i < _tags.length; i++) {
 
                 tags.push({
-                    status: 0,
-                    merkleRoot: ethers.utils.formatBytes32String("merkleroot"),
-                    startAt: ethers.BigNumber.from(_allocations[i].startTime),
-                    endAt: ethers.BigNumber.from(_allocations[i].endTime),
-                    maxTagCap: eth(_allocations[i].maxCap)
+                    "status": "0",
+                    "merkleRoot": ethers.utils.formatBytes32String("merkleroot"),
+                    "startAt": _tags[i].startAt,
+                    "endAt": _tags[i].endAt,
+                    "maxTagCap": ethers.utils.parseEther(_tags[i].maxCap.toString())
                 });
-                tagIds.push(_allocations.title);
+                tagIds.push(_tags[i].title);
             }
 
-            let igoTx = await this.igoFactoryContract.createIGO(
-                name,
+
+
+            let igoArgs = [
+                "name-122",
                 igoSetUp,
                 tagIds,
                 tags,
                 contractSetup,
-                vestingSetup);
+                vestingSetup
+            ]
+
+            console.log(igoArgs)
+
+            let args = [
+                name,
+                {
+                    "vestingContract": igoSetUp.vestingContract,
+                    "paymentToken": igoSetUp.paymentToken,
+                    "permit2": permit2Addr,
+                    "grandTotal": ethers.utils.parseEther("1000000"),
+                    "summedMaxTagCap": ethers.utils.parseEther("100000"),
+                    "refundFeeDecimals": '2'
+                },
+                ['First', 'Second'],
+                [
+                    {
+                        status: '0',
+                        merkleRoot: '0x6d65726b6c65726f6f7400000000000000000000000000000000000000000000',
+                        startAt: 1692970715,
+                        endAt: 1693057119,
+                        maxTagCap: ethers.utils.parseEther("5000")
+                    },
+                    {
+                        status: '0',
+                        merkleRoot: '0x6d65726b6c65726f6f7400000000000000000000000000000000000000000000',
+                        startAt: 1692970715,
+                        endAt: 1693057119,
+                        maxTagCap: ethers.utils.parseEther("5000")
+                    }
+                ],
+                {
+                    "paymentReceiver": '0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0',
+                    "admin": '0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0',
+                    "vestedToken": securityTokenAddr,
+                    "platformFee": '10',
+                    "totalTokenOnSale": ethers.utils.parseEther("500000"),
+                    "gracePeriod": '60',
+                    "decimals": '18'
+                },
+                {
+                    "startTime": 1692970766,
+                    "cliff": 864000,
+                    "duration": 4320000,
+                    "initialUnlockPercent": '12'
+                }
+            ];
+            let igoTx = await this.igoFactoryContract.createIGO(...igoArgs);
             const igoReceipt = await igoTx.wait();
 
             const event = igoReceipt.events[5];
@@ -106,7 +184,8 @@ class Service {
                 igo: event.args[1],
                 vesting: event.args[2]
             }
-        } catch {
+        } catch (err) {
+            console.log(err)
             return {
                 igo: null,
                 vesting: null

@@ -1,12 +1,11 @@
 const { ethers } = require("ethers");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO } = require("../config");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL } = require("../config");
 const db = require("../models");
 const Project = db.project;
 const WhiteList = db.whiteList;
 const User = db.user;
 const Transaction = db.transaction;
 const Tier = db.tier;
-const { createIGO, generateLeaves, generateMerkleRootAndProof } = require("../service");
 const service = require("../service");
 
 exports.list = (req, res) => {
@@ -97,7 +96,7 @@ exports.get = async (req, res) => {
 exports.getProof = async (req, res) => {
 
     let { projectId, userId, tagId } = req.params;
-    if(!(projectId && userId && tagId)) {
+    if (!(projectId && userId && tagId)) {
         return res.status(200).send({ message: RES_STATUS_FAIL, data: {} });
     }
 
@@ -158,7 +157,7 @@ exports.getProof = async (req, res) => {
 
                                 // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
                                 let leaves = service.generateAllocLeaves(allocations)
-                                let { root, proofs } = generateMerkleRootAndProof(leaves);
+                                let { root, proofs } = service.generateMerkleRootAndProof(leaves);
 
 
                                 return res.status(200).send({
@@ -191,8 +190,8 @@ exports.getProof = async (req, res) => {
                                 }]
 
                                 // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
-                                let leaves = generateLeaves(allocations)
-                                let { root, proofs } = generateMerkleRootAndProof(leaves);
+                                let leaves = service.generateLeaves(allocations)
+                                let { root, proofs } = service.generateMerkleRootAndProof(leaves);
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,
@@ -260,66 +259,68 @@ exports.update = async (req, res) => {
 
 exports.approve = async (req, res) => {
 
-    Project.updateOne({ _id: req.query.projectId }, { enable: true, visible: PROJECT_VISIBLE_NOT_STARTED })
-        .exec(async (err) => {
+
+    Project.findOne({ _id: req.query.projectId })
+        .populate("paymentCoin")
+        .populate("chain")
+        .populate("createdBy")
+        .exec(async (err, project) => {
+
             if (err) {
                 console.log(err)
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            Project.findOne({ _id: req.query.projectId })
-                .populate("paymentCoin")
-                .populate("chain")
-                .populate("createdBy")
-                .exec(async (err, project) => {
+            let summedMaxTagCap = project.funding.tags.reduce((sum, item) => {
+                return Number.parseInt(item.maxCap) + Number.parseInt(sum);
+            }, 0)
+            let igoSetUp = {
+                igoVesting: project.paymentCoin.address,
+                paymentToken: project.paymentCoin.address,
+                grandTotal: ethers.utils.parseEther((1000 + summedMaxTagCap).toString()),
+                summedMaxTagCap: ethers.utils.parseEther((summedMaxTagCap).toString())
+            };
 
-                    if (err) {
-                        console.log(err)
-                        return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                    }
-                    let summedMaxTagCap = project.funding.allocations.reduce((sum, item) => {
-                        return item.maxCap + sum;
-                    }, 0)
-                    let igoSetUp = {
-                        igoVestingAddr: project.staking.address,
-                        paymentTokenAddr: project.paymentCoin.address,
-                        grandTotal: summedMaxTagCap + ethers.utils.parseEther("1000"),
-                        summedMaxTagCap
-                    };
+            let contractSetup = {
+                igoToken: project.token.address,
+                totalTokenOnSale: ethers.utils.parseEther(project.vesting.amountTotal?.toString()),
+                decimals: project.token.decimals
+            };
 
-                    let contractSetup = {
-                        igoTokenAddr: project.token.address,
-                        totalTokenOnSale: project.vesting.amountTotal,
-                        decimals: project.token.decimals
-                    };
+            let vestingSetup = {
+                startTime: project.vesting.startAt,
+                cliff: project.vesting.cliff * 3600 * 24,
+                duration: project.vesting.duration * 3600 * 24,
+                initialUnlockPercent: project.vesting.initialUnlockPercent
+            };
+            let { igo, vesting } = await service.createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.tags)
 
-                    let vestingSetup = {
-                        startTime: project.vesting.startTime,
-                        cliff: project.vesting.cliff,
-                        duration: project.vesting.duration,
-                        initialUnlock: project.vesting.initialUnlock
-                    };
-                    let { igo, vesting } = await createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.allocations)
+            if (!igo) {
+                return res.status(500).send({
+                    message: RES_MSG_FAIL,
+                    status: RES_STATUS_FAIL,
+                });
+            }
+            project.vesting = {
+                ...project.vesting,
+                address: vesting
+            }
+            project.igo = {
+                ...project.igo,
+                address: igo
+            }
+            project.enable = true;
+            project.visible = PROJECT_VISIBLE_NOT_STARTED;
+            project = await project.save();
 
-                    project.vesting = {
-                        ...project.vesting,
-                        address: vesting
-                    }
-                    project.igo = {
-                        ...project.vesting,
-                        address: igo
-                    }
-
-                    await project.save();
-
-                    return res.status(200).send({
-                        message: RES_MSG_SUCESS,
-                        data: project,
-                        status: RES_STATUS_SUCCESS,
-                    });
-                })
-
+            console.log(project)
+            return res.status(200).send({
+                message: RES_MSG_SUCESS,
+                data: project,
+                status: RES_STATUS_SUCCESS,
+            });
         })
+
 
 }
 
