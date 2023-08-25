@@ -26,8 +26,6 @@ exports.list = (req, res) => {
         condition.enable = req.query.enable
     }
 
-    console.log(req.query.visible)
-
     Project.paginate(condition, options, (err, projects) => {
 
         if (err) {
@@ -278,6 +276,32 @@ exports.setVisible = async (req, res) => {
                 console.log(err)
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
+
+            return res.status(200).send({
+                message: RES_MSG_SUCESS,
+                data: project,
+                status: RES_STATUS_SUCCESS,
+            });
+        })
+
+}
+
+exports.updateTag = async (req, res) => {
+
+    Project.findOne({ _id: req.params.projectId })
+        .exec(async (err, project) => {
+            if (err) {
+                console.log(err)
+                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+            }
+
+            project.funding.tags = project.funding.tags.map((item) => {
+                if(item.title == req.params.tagId) {
+                    return req.body
+                }else return item;
+            })
+
+            project = await project.save()
 
             return res.status(200).send({
                 message: RES_MSG_SUCESS,

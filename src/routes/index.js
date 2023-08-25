@@ -67,6 +67,7 @@ router.put("/project/hash", middlewares.authJwt.verifyToken, projectController.p
 router.get("/project", projectController.get)
 router.put("/project/visible", projectController.setVisible)
 router.get("/project/get-proof/:projectId/:tagId/:userId", middlewares.authJwt.verifyToken, projectController.getProof)
+router.put("/project/tag/:projectId/:tagId", middlewares.authJwt.verifyToken, projectController.updateTag)
 
 //Transaction
 router.post("/transaction", middlewares.authJwt.verifyToken, transactionController.create)
