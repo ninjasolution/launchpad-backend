@@ -78,10 +78,10 @@ router.get("/chain/list", chainController.list)
 
 //Coin
 router.post("/coin/create", middlewares.authJwt.verifyToken, coinController.create)
-router.get("/coin/list", middlewares.authJwt.verifyToken, coinController.list)
+router.get("/coin/list", coinController.list)
 
 //NFT
-router.get("/nft/list", middlewares.authJwt.verifyToken, nftController.list)
+router.get("/nft/list", nftController.list)
 
 //Crypto Payment
 router.post("/crypto/payment", middlewares.authJwt.verifyToken, cryptoPaymentController.payment)

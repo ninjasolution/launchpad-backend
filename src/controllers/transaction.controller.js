@@ -4,26 +4,34 @@ const Transaction = db.transaction;
 
 exports.create = (req, res) => {
 
-  const Transaction = new Transaction({
+  const transaction = new Transaction({
     type: req.body.type,
     platform: req.body.platform,
     project: req.body.project,
     amount: req.body.amount,
     coin: req.body.coin,
     paymentMethod: req.body.paymentMethod,
-    chain: req.body.chain,
+    chainId: req.body.chainId,
     status: req.body.status,
     hash: req.body.hash,
     user: req.body.user,
   })
 
-  Transaction.save(async (err, _transaction) => {
+  if(req.body.project) {
+    transaction.project = req.body.project
+  }
+  if(req.body.hash) {
+    transaction.hash = req.body.hash
+  }
+  
+
+  transaction.save(async (err, _transaction) => {
     if (err) {
+      console.log(err)
       res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
       return;
     }
 
-    console.log(_transaction)
 
     return res.status(200).send({
       message: config.RES_MSG_SAVE_SUCCESS,

@@ -259,7 +259,7 @@ class Service {
         return { root, proofs };
     }
 
-    async recoverSignature(nonce, signature) {
+    async recoverSignature(nonce = "", signature = "") {
         return await ethers.utils.verifyMessage(nonce.toString(), signature)
     }
 

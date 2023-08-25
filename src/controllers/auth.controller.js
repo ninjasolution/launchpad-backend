@@ -89,8 +89,7 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res) => {
   const address = await service.recoverSignature(req.body.nonce, req.body.signature)
   User.findOne({
-    wallet: address,
-    status: 1
+    wallet: address
   })
     .populate("role", "name")
     .exec((err, user) => {
@@ -136,6 +135,10 @@ exports.signin = async (req, res) => {
           });
         });
 
+      }
+
+      if(user.role.name == SUBADMIN && !user.status) {
+        return res.status(200).send({ message: "Not approved", status: RES_STATUS_FAIL });
       }
 
       var token = jwt.sign({ id: user._id }, securityCode, {
