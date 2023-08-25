@@ -85,6 +85,10 @@ module.exports = (connection, autoIncrement) => {
       type: Object,
       default: {}
     },
+    curTag: {
+      type: Object,
+      default: {}
+    },
     vesting: {
       type: Object,
       default: {}

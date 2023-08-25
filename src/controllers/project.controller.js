@@ -8,13 +8,14 @@ const User = db.user;
 const Transaction = db.transaction;
 const Tier = db.tier;
 const service = require("../service");
+const { tiers } = require("../config/static.source");
 
 exports.list = (req, res) => {
     var options = {
         sort: { createdAt: -1 },
         page: req.query.page || 1,
         limit: req.query.limit || 10,
-        populate: "createdBy"
+        populate: ["createdBy", "paymentCoin"]
     };
 
     var condition = {}
@@ -111,7 +112,6 @@ exports.getProof = async (req, res) => {
                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
-            let { amount, } = req.body;
             let nonce = 1;
             let deadline = ethers.constants.MaxUint256
             const permit = {
@@ -119,7 +119,7 @@ exports.getProof = async (req, res) => {
                     // token we are permitting to be transferred
                     token: securityTokenAddr,
                     // amount we are permitting to be transferred
-                    amount: amount
+                    amount: ethers.utils.parseEther(req.params.amount)
                 },
                 // who can transfer the tokens
                 spender: project.igo.address,
@@ -127,6 +127,7 @@ exports.getProof = async (req, res) => {
                 // signature deadline
                 deadline
             };
+
             const { domain, types, values } = SignatureTransfer.getPermitData(permit, permit2Addr, chainId)
 
             User.findOne({ _id: req.params.userId })
@@ -137,10 +138,11 @@ exports.getProof = async (req, res) => {
                     if (!user) {
                         return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     }
-                    let tag = project.funding.tags.find((tag => tag.name == req.params.tagId));
+                    let tag = project.funding.tags.find((tag => tag.title == req.params.tagId));
+                    if(!tag) return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     if (tag.accessType == TAG_TYPE_PUBLIC) {
                         Transaction
-                            .find({ project: req.params.projectId, platform: PLATFORM_TYPE_STAKING_IDO, user: req.params.userId })
+                            .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.params.userId })
                             .exec(async (err, transactions) => {
 
                                 if (err) {
@@ -152,10 +154,17 @@ exports.getProof = async (req, res) => {
                                 }
 
                                 let amount = transactions.reduce((sum, item) => {
-                                    return sum + item.amount
+                                    return sum + Number.parseFloat(item.amount)
                                 }, 0);
 
-                                let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
+                                let tier = await tiers.find(item => item.minAmount < amount && item.maxAmount < amount)
+                                if(!tier) {
+                                    return res.status(200).send({
+                                        message: RES_MSG_SUCESS,
+                                        data: { proof: "", tier: null, nonce: null, deadline: null, domain: null, types: null, values: null },
+                                        status: RES_STATUS_SUCCESS,
+                                    });
+                                }
                                 let allocation = {
                                     tagId: req.params.tagId,
                                     account: user.wallet,
@@ -172,7 +181,7 @@ exports.getProof = async (req, res) => {
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,
-                                    data: { proof: proofs[0], tier, nonce, deadline, domain, types, values },
+                                    data: { proof: proofs[0], allocation, tier, nonce, deadline, domain, types, values },
                                     status: RES_STATUS_SUCCESS,
                                 });
                             })
@@ -295,13 +304,14 @@ exports.updateTag = async (req, res) => {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            project.funding.tags = project.funding.tags.map((item) => {
-                if(item.title == req.params.tagId) {
+            let newProject = project;
+            newProject.funding.tags = project.funding.tags.map((item) => {
+                if(item.title == req.body.title) {
                     return req.body
                 }else return item;
             })
-
-            project = await project.save()
+            newProject.curTag = req.body;
+            newProject = await newProject.save()
 
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
