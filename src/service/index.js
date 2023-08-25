@@ -36,16 +36,17 @@ class Service {
                 let summedMaxTagCap = project.funding.tags.reduce((sum, item) => {
                     return Number.parseInt(item.maxCap) + Number.parseInt(sum);
                 }, 0)
+
                 let igoSetUp = {
                     igoVesting: project.paymentCoin.address,
                     paymentToken: project.paymentCoin.address,
-                    grandTotal: ethers.utils.parseEther((10 + Number.parseInt(summedMaxTagCap)).toString()),
-                    summedMaxTagCap: ethers.utils.parseEther((Number.parseInt(summedMaxTagCap) + 100).toString())
+                    grandTotal: ethers.utils.parseEther((10 * Number.parseInt(summedMaxTagCap)).toString()),
+                    summedMaxTagCap: ethers.utils.parseEther((Number.parseInt(summedMaxTagCap) * 2).toString())
                 };
 
                 let contractSetup = {
                     igoToken: project.token.address,
-                    totalTokenOnSale: ethers.utils.parseEther(project.vesting.amountTotal),
+                    totalTokenOnSale: project.vesting.amountTotal,
                     decimals: project.token.decimals
                 };
 
@@ -55,7 +56,7 @@ class Service {
                     duration: project.vesting.duration * 3600 * 24,
                     initialUnlockPercent: project.vesting.initialUnlockPercent
                 };
-                let { igo, vesting } = await this.createIGO("project.projectName", project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.tags)
+                let { igo, vesting } = await this.createIGO("project.proewrjectName", project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.tags)
 
                 if (!igo) {
                     console.log("================")
@@ -121,7 +122,7 @@ class Service {
 
 
             let igoArgs = [
-                "name-122",
+                name,
                 igoSetUp,
                 tagIds,
                 tags,
@@ -129,7 +130,6 @@ class Service {
                 vestingSetup
             ]
 
-            console.log(igoArgs)
 
             let args = [
                 name,

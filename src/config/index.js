@@ -1,5 +1,6 @@
 module.exports = { 
     RPC: "https://goerli.infura.io/v3/35bdaa33a8834ed4adbcb0cf06f15f26",
+    chainId: "5",
     // RPC: "https://avalanche-fuji.infura.io/v3/35bdaa33a8834ed4adbcb0cf06f15f26",
     // permit2Addr: "0xA5649f85c0cbB539d3e54E31c9Eab3D5eF5bf9aD",
     // securityTokenAddr: "0x420A4cDdD87583bA78d4884c21A2b7eCC7C3087d",
@@ -13,8 +14,8 @@ module.exports = {
     utilityTokenAddr: "0x7E887A370A403fdAbeAaE18875317731FBf9D73b",
     igoTokenAddr: "0x54FA517F05e11Ffa87f4b22AE87d91Cec0C2D7E1",
     igoVestingAddr: "0xCB8B16C162fe9a49E4f5BaC2c2d91a42f75BbC04",
-    igoFactoryAddr: "0xd4b66373C530cf50a55EAb9292c03Ae26D3B97ed",
-    igoDeployerAddr: "0x4aD247523b836Ac3Eb7E4458FfAc88e13a238560",
+    igoFactoryAddr: "0x853dE4b197B898A491032d628A5781d9AB790d28",
+    igoDeployerAddr: "0xf72f20835584A248551344e3f927AE4514DE9025",
     stakingTokenAddr: "0xD8dcEC55533Df40EEB0fbf3Ffb738835B1D4D70D",
     yieldFarmingTokenAddr: "0xD8dcEC55533Df40EEB0fbf3Ffb738835B1D4D70D",
     securityCode: "launchpad",

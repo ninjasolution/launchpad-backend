@@ -1,6 +1,7 @@
 const { ethers } = require("ethers");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL } = require("../config");
+const { SignatureTransfer } = require("@uniswap/Permit2-sdk")
 const db = require("../models");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL, permit2Addr, securityTokenAddr, chainId } = require("../config");
 const Project = db.project;
 const WhiteList = db.whiteList;
 const User = db.user;
@@ -20,10 +21,12 @@ exports.list = (req, res) => {
     if (req.query.createdBy) {
         condition.createdBy = req.query.createdBy
     } else if (req.query.visible) {
-        condition.visible = req.query.createdBy
+        condition.visible = req.query.visible
     } else if (req.query.enable) {
         condition.enable = req.query.enable
     }
+
+    console.log(req.query.visible)
 
     Project.paginate(condition, options, (err, projects) => {
 
@@ -110,18 +113,33 @@ exports.getProof = async (req, res) => {
                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
+            let { amount, } = req.body;
+            let nonce = 1;
+            let deadline = ethers.constants.MaxUint256
+            const permit = {
+                permitted: {
+                    // token we are permitting to be transferred
+                    token: securityTokenAddr,
+                    // amount we are permitting to be transferred
+                    amount: amount
+                },
+                // who can transfer the tokens
+                spender: project.igo.address,
+                nonce,
+                // signature deadline
+                deadline
+            };
+            const { domain, types, values } = SignatureTransfer.getPermitData(permit, permit2Addr, chainId)
+
             User.findOne({ _id: req.params.userId })
                 .exec((err, user) => {
                     if (err) {
                         return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                     }
-
                     if (!user) {
                         return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     }
-
                     let tag = project.funding.tags.find((tag => tag.name == req.params.tagId));
-
                     if (tag.accessType == TAG_TYPE_PUBLIC) {
                         Transaction
                             .find({ project: req.params.projectId, platform: PLATFORM_TYPE_STAKING_IDO, user: req.params.userId })
@@ -135,25 +153,19 @@ exports.getProof = async (req, res) => {
                                     return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                                 }
 
-
                                 let amount = transactions.reduce((sum, item) => {
                                     return sum + item.amount
                                 }, 0);
 
                                 let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
-                                let allocations = [{
+                                let allocation = {
                                     tagId: req.params.tagId,
                                     account: user.wallet,
                                     maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()),
                                     refundFee: 40,
                                     igoTokenPerPaymentToken: tag.price,
-                                }, {
-                                    tagId: req.params.tagId,
-                                    account: user.wallet,
-                                    maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()),
-                                    refundFee: 40,
-                                    igoTokenPerPaymentToken: tag.price,
-                                }]
+                                }
+                                let allocations = [allocation, allocation]
 
                                 // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
                                 let leaves = service.generateAllocLeaves(allocations)
@@ -162,7 +174,7 @@ exports.getProof = async (req, res) => {
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,
-                                    data: { proof: proofs[0], tier },
+                                    data: { proof: proofs[0], tier, nonce, deadline, domain, types, values },
                                     status: RES_STATUS_SUCCESS,
                                 });
                             })
@@ -181,13 +193,14 @@ exports.getProof = async (req, res) => {
 
                                 let amount = whiteList.amount
                                 let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
-                                let allocations = [{
+                                let allocation = {
                                     tagId: req.params.tagId,
                                     account: user.wallet,
                                     maxAllocation: ethers.utils.parseEther(project.token.totalSupply * tier.percent / 100),
                                     refundFee: 40,
                                     igoTokenPerPaymentToken: tag.maxAllocation.price,
-                                }]
+                                }
+                                let allocations = [allocation, allocation]
 
                                 // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
                                 let leaves = service.generateLeaves(allocations)
@@ -195,7 +208,7 @@ exports.getProof = async (req, res) => {
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,
-                                    data: { root, proof: proofs[0], tier },
+                                    data: { root, proof: proofs[0], tier, nonce, deadline, domain, types, values },
                                     status: RES_STATUS_SUCCESS,
                                 });
                             })
@@ -257,6 +270,24 @@ exports.update = async (req, res) => {
 
 }
 
+exports.setVisible = async (req, res) => {
+
+    Project.updateOne({ _id: req.query.projectId }, { visible: req.body.visible })
+        .exec((err, project) => {
+            if (err) {
+                console.log(err)
+                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+            }
+
+            return res.status(200).send({
+                message: RES_MSG_SUCESS,
+                data: project,
+                status: RES_STATUS_SUCCESS,
+            });
+        })
+
+}
+
 exports.approve = async (req, res) => {
 
 
@@ -277,8 +308,8 @@ exports.approve = async (req, res) => {
             let igoSetUp = {
                 igoVesting: project.paymentCoin.address,
                 paymentToken: project.paymentCoin.address,
-                grandTotal: ethers.utils.parseEther((1000 + summedMaxTagCap).toString()),
-                summedMaxTagCap: ethers.utils.parseEther((summedMaxTagCap).toString())
+                grandTotal: ethers.utils.parseEther((10 * summedMaxTagCap).toString()),
+                summedMaxTagCap: ethers.utils.parseEther((summedMaxTagCap * 2).toString())
             };
 
             let contractSetup = {
