@@ -6,7 +6,6 @@ const PayPalPaymentController = require("../controllers/PaypalPayment.controller
 const authController = require("../controllers/auth.controller");
 const userController = require("../controllers/user.controller");
 const cryptoPaymentController = require("../controllers/cryptoPayment.controller");
-const transactionController = require("../controllers/transactionPayment.controller");
 const collectionController = require("../controllers/collection.controller");
 const nftController = require("../controllers/nft.controller");
 const fileController = require("../controllers/file.controller");
@@ -16,6 +15,7 @@ const adminController = require("../controllers/admin.controller");
 const chainController = require("../controllers/chain.controller");
 const coinController = require("../controllers/coin.controller");
 const countryController = require("../controllers/country.controller");
+const transactionController = require("../controllers/transaction.controller");
 
 router.post("/auth/signup", [middlewares.verifySignUp.checkRolesExisted], authController.signup)
 router.post("/auth/signin", authController.signin)
@@ -51,8 +51,6 @@ router.post("/withdraw", [middlewares.authJwt.verifyToken], userController.withd
 router.get("/avatar/:fileName", fileController.getFile);
 router.delete("/avatar/:fileName", middlewares.authJwt.isAdmin, fileController.delete);
 
-//Transaction
-router.get("/transaction", middlewares.authJwt.verifyToken, transactionController.index)
 
 //Collection
 router.get("/collection/list", collectionController.list)
@@ -69,6 +67,10 @@ router.put("/project/hash", middlewares.authJwt.verifyToken, projectController.p
 router.get("/project", projectController.get)
 router.put("/project/visible", projectController.setVisible)
 router.get("/project/get-proof/:projectId/:tagId/:userId", middlewares.authJwt.verifyToken, projectController.getProof)
+
+//Transaction
+router.post("/transaction", middlewares.authJwt.verifyToken, transactionController.create)
+
 
 //Chain
 router.post("/chain/create", middlewares.authJwt.verifyToken, chainController.create)

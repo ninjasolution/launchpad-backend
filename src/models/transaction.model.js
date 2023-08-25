@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const timestamps = require('mongoose-timestamp');
-const { PLATFORM_TYPE_STAKING_IDO, PLATFORM_TYPE_STAKING_IGO, PLATFORM_TYPE_FARMING_IDO, TX_TYPE_BUY_IGO, TX_TYPE_CLAIM_IGO, TX_TYPE_DEPOSIT, TX_TYPE_REFUND, TX_TYPE_SWAP, TX_TYPE_WITHDRAW, TX_STATUS_SUCCESS, TX_STATUS_FAIL } = require("../config");
+const { PLATFORM_TYPE_STAKING_IDO, PLATFORM_TYPE_STAKING_IGO, PLATFORM_TYPE_FARMING_IDO, TX_TYPE_BUY_IGO, TX_TYPE_CLAIM_IGO, TX_TYPE_DEPOSIT, TX_TYPE_REFUND, TX_TYPE_SWAP, TX_TYPE_WITHDRAW, TX_STATUS_SUCCESS, TX_STATUS_FAIL, TX_TYPE_LOCK } = require("../config");
 
 
 module.exports = (connection, autoIncrement) => {
@@ -8,7 +8,7 @@ module.exports = (connection, autoIncrement) => {
   const TransactionSchema = new mongoose.Schema({
     type: {
       type: String,
-      enum: [TX_TYPE_BUY_IGO, TX_TYPE_CLAIM_IGO, TX_TYPE_DEPOSIT, TX_TYPE_REFUND, TX_TYPE_SWAP, TX_TYPE_WITHDRAW],
+      enum: [TX_TYPE_BUY_IGO, TX_TYPE_LOCK, TX_TYPE_CLAIM_IGO, TX_TYPE_DEPOSIT, TX_TYPE_REFUND, TX_TYPE_SWAP, TX_TYPE_WITHDRAW],
     },
     platform: {
       type: String,
@@ -19,7 +19,7 @@ module.exports = (connection, autoIncrement) => {
       ref: "Project",
     },
     amount: Number,
-    Coin: {
+    coin: {
       type: Number,
       ref: "Coin",    
     },
