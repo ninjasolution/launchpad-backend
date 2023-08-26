@@ -142,7 +142,7 @@ exports.getProof = async (req, res) => {
                     if(!tag) return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     if (tag.accessType == TAG_TYPE_PUBLIC) {
                         Transaction
-                            .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.params.userId })
+                            .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.userId })
                             .exec(async (err, transactions) => {
 
                                 if (err) {
@@ -168,7 +168,7 @@ exports.getProof = async (req, res) => {
                                 let allocation = {
                                     tagId: req.params.tagId,
                                     account: user.wallet,
-                                    maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()),
+                                    maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()).toString(),
                                     refundFee: 40,
                                     igoTokenPerPaymentToken: tag.price,
                                 }
@@ -177,7 +177,6 @@ exports.getProof = async (req, res) => {
                                 // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
                                 let leaves = service.generateAllocLeaves(allocations)
                                 let { root, proofs } = service.generateMerkleRootAndProof(leaves);
-
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,

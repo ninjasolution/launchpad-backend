@@ -88,6 +88,7 @@ exports.signup = async (req, res) => {
 
 exports.signin = async (req, res) => {
   const address = await service.recoverSignature(req.body.nonce, req.body.signature)
+  console.log(address)
   User.findOne({
     wallet: address
   })

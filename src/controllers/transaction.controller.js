@@ -14,7 +14,7 @@ exports.create = (req, res) => {
     chainId: req.body.chainId,
     status: req.body.status,
     hash: req.body.hash,
-    user: req.body.user,
+    user: req.userId,
   })
 
   if(req.body.project) {
