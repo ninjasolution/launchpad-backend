@@ -114,7 +114,11 @@ class Service {
                     "merkleRoot": ethers.utils.formatBytes32String("merkleroot"),
                     "startAt": _tags[i].startAt,
                     "endAt": _tags[i].endAt,
-                    "maxTagCap": ethers.utils.parseEther(_tags[i].maxCap.toString())
+                    "maxTagCap": ethers.utils.parseEther(_tags[i].maxCap.toString()),
+                    "minAllocation": ethers.utils.parseEther(_tags[i].maxCap.toString()),
+                    "maxAllocation": ethers.utils.parseEther(_tags[i].maxCap.toString()),
+                    "allocation": ethers.utils.parseEther(_tags[i].maxCap.toString()),
+                    "maxParticipants": _tags[i].maxParticipants
                 });
                 tagIds.push(_tags[i].title);
             }
@@ -264,7 +268,6 @@ class Service {
     }
 
 
-
     async getIGODetail(from, count) {
         let result = await this.igoFactoryContract.getIgosDetails(0, 1);
         const IGOContract = new ethers.Contract(result.igos[0].igo, IGO.abi, this.wallet);
@@ -275,6 +278,16 @@ class Service {
 
     eth(amount) {
         return ethers.utils.parseEther(amount.toString());
+    }
+
+    customParse(amount, decimals) {
+        if(!amount) return 0;
+        return amount * Math.pow(10, decimals);
+    }
+
+    customFormat(amount, decimals) {
+        if(!amount) return 0;
+        return amount / Math.pow(10, decimals);
     }
 
 

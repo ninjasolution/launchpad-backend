@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-
 module.exports = (connection, autoIncrement) => {
 
   const TagSchema = new mongoose.Schema({
@@ -16,6 +15,9 @@ module.exports = (connection, autoIncrement) => {
     maxCap: {
       type: Number,
     },
+    allocation: {
+      type: Number,
+    },
     minAllocation: {
       type: Number,
     },
@@ -23,6 +25,9 @@ module.exports = (connection, autoIncrement) => {
       type: Number
     },
     minSwapLevel: {
+      type: Number
+    },
+    maxParticipants: {
       type: Number
     },
     accessType: {
@@ -34,6 +39,10 @@ module.exports = (connection, autoIncrement) => {
     endAt: {
       type: Number
     },
+    project: {
+      type: Number,
+      ref: "Project"
+    }
   });
   
   TagSchema.plugin(autoIncrement.plugin, "Tag")  

@@ -30,6 +30,7 @@ db.country = require("./country.model")(db.connection, autoIncrement);
 db.whiteList = require("./whiteList.model")(db.connection, autoIncrement);
 db.tier = require("./tier.model")(db.connection, autoIncrement);
 db.nonce = require("./nonce.model")(db.connection, autoIncrement);
+db.tag = require("./tag.model")(db.connection, autoIncrement);
 
 
 db.ROLES = [SUPERADMIN, SUBADMIN, USER]

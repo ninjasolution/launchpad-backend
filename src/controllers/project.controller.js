@@ -7,6 +7,7 @@ const WhiteList = db.whiteList;
 const User = db.user;
 const Transaction = db.transaction;
 const Tier = db.tier;
+const Tag = db.tag;
 const service = require("../service");
 const { tiers } = require("../config/static.source");
 
@@ -15,7 +16,7 @@ exports.list = (req, res) => {
         sort: { createdAt: -1 },
         page: req.query.page || 1,
         limit: req.query.limit || 10,
-        populate: ["createdBy", "paymentCoin"]
+        populate: ["createdBy", "paymentCoin", "tags", "curTag", "chain"]
     };
 
     var condition = {}
@@ -30,6 +31,7 @@ exports.list = (req, res) => {
     Project.paginate(condition, options, (err, projects) => {
 
         if (err) {
+            console.log(err)
             res.status(500).send({ message: err });
             return;
         }
@@ -47,18 +49,34 @@ exports.create = async (req, res) => {
 
     const _project = req.body;
     _project.status = PROJECT_STATUS_UPLOAD
-    const project = new Project(req.body);
+
+    let tagCount = req.body.tags.length;
+    let tags = [];
+    for(let i=0 ; i<tagCount ; i++) {
+        let tag = new Tag(project.tags[i])
+        tag = await tag.save();
+        tags.push(tag._id);
+    }
+
+    const project = new Project({
+        ...req.body,
+        tags: tags
+    });
     project.save(async (err, _project) => {
         if (err) {
             console.log(err)
             return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
         }
 
+        await Tag.updateMany({_id: {$in: tags}}, {project: _project._id});
+
         Project
             .findOne({ _id: _project._id })
             .populate("paymentCoin")
             .populate("createdBy")
             .populate("chain")
+            .populate("tags")
+            .populate("curTag")
             .exec(async (err, project) => {
                 return res.status(200).send({
                     message: RES_MSG_SUCESS,
@@ -76,7 +94,10 @@ exports.get = async (req, res) => {
     Project
         .findOne({ _id: req.query.projectId })
         .populate("paymentCoin")
+        .populate("createdBy")
         .populate("chain")
+        .populate("tags")
+        .populate("curTag")
         .exec((err, project) => {
             if (err) {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
@@ -139,7 +160,7 @@ exports.getProof = async (req, res) => {
                         return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     }
                     let tag = project.funding.tags.find((tag => tag.title == req.params.tagId));
-                    if(!tag) return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+                    if (!tag) return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     if (tag.accessType == TAG_TYPE_PUBLIC) {
                         Transaction
                             .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.userId })
@@ -158,7 +179,7 @@ exports.getProof = async (req, res) => {
                                 }, 0);
 
                                 let tier = await tiers.find(item => item.minAmount < amount && item.maxAmount < amount)
-                                if(!tier) {
+                                if (!tier) {
                                     return res.status(200).send({
                                         message: RES_MSG_SUCESS,
                                         data: { proof: "", tier: null, nonce: null, deadline: null, domain: null, types: null, values: null },
@@ -305,9 +326,9 @@ exports.updateTag = async (req, res) => {
 
             let newProject = project;
             newProject.funding.tags = project.funding.tags.map((item) => {
-                if(item.title == req.body.title) {
+                if (item.title == req.body.title) {
                     return req.body
-                }else return item;
+                } else return item;
             })
             newProject.curTag = req.body;
             newProject = await newProject.save()
@@ -327,6 +348,7 @@ exports.approve = async (req, res) => {
     Project.findOne({ _id: req.query.projectId })
         .populate("paymentCoin")
         .populate("chain")
+        .populate("tags")
         .populate("createdBy")
         .exec(async (err, project) => {
 
@@ -335,7 +357,7 @@ exports.approve = async (req, res) => {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            let summedMaxTagCap = project.funding.tags.reduce((sum, item) => {
+            let summedMaxTagCap = project.tags.reduce((sum, item) => {
                 return Number.parseInt(item.maxCap) + Number.parseInt(sum);
             }, 0)
             let igoSetUp = {
@@ -357,7 +379,7 @@ exports.approve = async (req, res) => {
                 duration: project.vesting.duration * 3600 * 24,
                 initialUnlockPercent: project.vesting.initialUnlockPercent
             };
-            let { igo, vesting } = await service.createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.funding.tags)
+            let { igo, vesting } = await service.createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.tags)
 
             if (!igo) {
                 return res.status(500).send({
@@ -377,7 +399,8 @@ exports.approve = async (req, res) => {
             project.visible = PROJECT_VISIBLE_NOT_STARTED;
             project = await project.save();
 
-            console.log(project)
+            console.log(igo, vesting)
+
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
                 data: project,

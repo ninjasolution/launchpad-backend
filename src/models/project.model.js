@@ -81,14 +81,6 @@ module.exports = (connection, autoIncrement) => {
       type: Number,
       ref: "Coin"
     },
-    funding: {
-      type: Object,
-      default: {}
-    },
-    curTag: {
-      type: Object,
-      default: {}
-    },
     vesting: {
       type: Object,
       default: {}
@@ -109,6 +101,14 @@ module.exports = (connection, autoIncrement) => {
       type: Number,
       ref: "Collection",
     }],
+    tags: [{
+      type: Number,
+      ref: "Tag",
+    }],
+    curTag: {
+      type: Number,
+      ref: "Tag"
+    },
     createdBy: {
       type: Number,
       ref: "User",
