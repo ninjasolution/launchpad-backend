@@ -1,6 +1,6 @@
 const { ethers } = require("ethers");
 const db = require("../models");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL, permit2Addr, securityTokenAddr, chainId } = require("../config");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL, permit2Addr, securityTokenAddr, chainId, PROJECT_STATUS_FILEHASH } = require("../config");
 const Project = db.project;
 const WhiteList = db.whiteList;
 const User = db.user;
@@ -142,85 +142,67 @@ exports.getProof = async (req, res) => {
                     if (!user) {
                         return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     }
-                    if (project.curTag.accessType == TAG_TYPE_PUBLIC) {
 
-                        Transaction
-                            .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.userId })
-                            .exec(async (err, transactions) => {
+                    WhiteList
+                        .findOne({ project: req.params.projectId, address: user.wallet })
+                        .exec(async (err, whiteList) => {
 
-                                if (err) {
-                                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                                }
+                            if (err) {
+                                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                            }
 
-                                if (!transactions) {
-                                    return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
-                                }
+                            if (!whiteList) {
+                                Transaction
+                                    .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.userId })
+                                    .exec(async (err, transactions) => {
 
-                                let amount = transactions.reduce((sum, item) => {
-                                    return sum + Number.parseFloat(item.amount)
-                                }, 0);
+                                        if (err) {
+                                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                                        }
 
-                                let tier = await tiers.find(item => item.minAmount < amount && item.maxAmount < amount)
-                                if (!tier) {
-                                    return res.status(200).send({
-                                        message: RES_MSG_SUCESS,
-                                        data: { proof: "", tier: null, nonce: null, deadline: null, domain: null, types: null, values: null },
-                                        status: RES_STATUS_SUCCESS,
-                                    });
-                                }
-                                let allocation = {
-                                    tagId: req.params.tagId,
-                                    account: user.wallet,
-                                    maxAllocation: service.customParse((project.token.totalSupply * tier.percent / 100), 4).toString(),
-                                    refundFee: 40,
-                                    igoTokenPerPaymentToken: project.curTag.price,
-                                }
-                                let allocations = [allocation, allocation]
+                                        if (!transactions) {
+                                            return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+                                        }
 
-                                // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
-                                let leaves = service.generateAllocLeaves(allocations)
-                                let { root, proofs } = service.generateMerkleRootAndProof(leaves);
+                                        let tier = service.getTier(transactions)
+                                        let allocation = {
+                                            tagId: req.params.tagId,
+                                            account: user.wallet,
+                                            maxAllocation: service.customParse((project.token.totalSupply * tier.percent / 100), 4).toString(),
+                                            refundFee: 40,
+                                            igoTokenPerPaymentToken: project.curTag.price,
+                                        }
+                                        let allocations = [allocation, allocation]
 
-                                return res.status(200).send({
-                                    message: RES_MSG_SUCESS,
-                                    data: { proof: proofs[0], allocation, tier },
-                                    status: RES_STATUS_SUCCESS,
-                                });
-                            })
-                    } else {
+                                        let leaves = service.generateAllocLeaves(allocations)
+                                        let { root, proofs } = service.generateMerkleRootAndProof(leaves);
 
-                        WhiteList
-                            .findOne({ project: req.params.projectId, address: user.wallet })
-                            .exec(async (err, whiteList) => {
+                                        return res.status(200).send({
+                                            message: RES_MSG_SUCESS,
+                                            data: { proof: proofs[0], allocation, tier },
+                                            status: RES_STATUS_SUCCESS,
+                                        });
+                                    })
+                            }
 
-                                if (err) {
-                                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                                }
+                            let allocation = {
+                                tagId: req.params.tagId,
+                                account: user.wallet,
+                                maxAllocation: service.customParse(project.token.totalSupply * whiteList.percent / 100, 4),
+                                refundFee: 40,
+                                igoTokenPerPaymentToken: project.curTag.price,
+                            }
+                            let allocations = [allocation, allocation]
 
-                                if (!whiteList) {
-                                    return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
-                                }
+                            let leaves = service.generateAllocLeaves(allocations)
+                            let { root, proofs } = service.generateMerkleRootAndProof(leaves);
 
-                                let allocation = {
-                                    tagId: req.params.tagId,
-                                    account: user.wallet,
-                                    maxAllocation: ethers.utils.parseEther(project.token.totalSupply * whiteList.percent / 100),
-                                    refundFee: 40,
-                                    igoTokenPerPaymentToken: project.curTag.price,
-                                }
-                                let allocations = [allocation, allocation]
-
-                                // let leaves = generateLeaves(whiteLists.map((item) => ({ address: item.address, amount: item.percent })))
-                                let leaves = service.generateLeaves(allocations)
-                                let { root, proofs } = service.generateMerkleRootAndProof(leaves);
-
-                                return res.status(200).send({
-                                    message: RES_MSG_SUCESS,
-                                    data: { root, proof: proofs[0] },
-                                    status: RES_STATUS_SUCCESS,
-                                });
-                            })
-                    }
+                            return res.status(200).send({
+                                message: RES_MSG_SUCESS,
+                                data: { proof: proofs[0], allocation },
+                                status: RES_STATUS_SUCCESS,
+                            });
+                        })
                 })
         })
 
@@ -491,24 +473,24 @@ exports.genSnapshot = async (req, res) => {
                             for (let i = 0; i < whiteLists.length; i++) {
                                 snapshot.totalUser += 1;
 
-                                if(tiers[tiers.length - 1].percent < whiteLists[i].percent) {
+                                if (tiers[tiers.length - 1].percent < whiteLists[i].percent) {
                                     snapshot.users.tier10 += 1;
                                 }
                                 for (let j = tiers.length - 1; j >= 0; j--) {
 
-                                    if(j > 0) {
+                                    if (j > 0) {
                                         if (tiers[j].percent >= whiteLists[i].percent && tiers[j - 1].percent >= whiteLists[i].percent) {
                                             snapshot.users[`tier${j}`] += 1;
                                             break;
                                         }
-                                    }else {
+                                    } else {
                                         snapshot.users.public += 1;
                                     }
                                 }
                             }
 
                             _project.snapshot = snapshot;
-                            _project.status = PROJECT_STATUS_PROGRESS
+                            _project.status = PROJECT_STATUS_FILEHASH
                             _project.save(async (err, project) => {
                                 if (err) {
                                     console.log(err)

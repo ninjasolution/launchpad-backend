@@ -7,7 +7,7 @@ module.exports = (connection, autoIncrement) => {
     label: {
       type: Number,
     },
-    level: {
+    weight: {
       type: Number,
     },
     minAmount: {

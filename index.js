@@ -173,7 +173,7 @@ function initial() {
           maxAmount: item.maxAmount,
           percent: item.percent,
           duration: item.duration,
-          level: item.level,
+          weight: item.weight,
           label: item.id
         });
         await tier.save();

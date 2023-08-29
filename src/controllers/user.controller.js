@@ -1,8 +1,9 @@
 const { ethers } = require("ethers");
-const { SUBADMIN, RES_STATUS_SUCCESS } = require("../config");
+const { SUBADMIN, RES_STATUS_SUCCESS, PLATFORM_TYPE_STAKING_IDO, TX_TYPE_DEPOSIT, TX_TYPE_LOCK } = require("../config");
 const { requestBotAPI } = require("../helpers");
 const db = require("../models");
-const { getRndInteger } = require("../service");
+const { getRndInteger, getTier } = require("../service");
+const { tiers } = require("../config/static.source");
 const User = db.user;
 const Role = db.role;
 const Nonce = db.nonce;
@@ -108,19 +109,19 @@ exports.getUnApprovedAdmins = (req, res) => {
         role: role?._id,
         status: 0
       })
-      .populate("projects")
-      .exec((err, users) => {
-        if (err) {
-          res.status(500).send({ message: err });
-          return;
-        }
+        .populate("projects")
+        .exec((err, users) => {
+          if (err) {
+            res.status(500).send({ message: err });
+            return;
+          }
 
-        if (!users) {
-          return res.status(404).send({ message: "Users Not found.", status: "errors" });
-        }
+          if (!users) {
+            return res.status(404).send({ message: "Users Not found.", status: "errors" });
+          }
 
-        return res.status(200).send({ status: RES_STATUS_SUCCESS, data: users });
-      })
+          return res.status(200).send({ status: RES_STATUS_SUCCESS, data: users });
+        })
 
 
     })
@@ -142,7 +143,6 @@ exports.getUserNonce = (req, res) => {
         await newNonce.save();
 
         return res.status(200).json({ status: RES_STATUS_SUCCESS, data: { nonce: _nonce } });
-        // return res.status(200).send({ message: "User Not found.", status: "errors" });
       }
 
       return res.status(200).json({ status: RES_STATUS_SUCCESS, data: { nonce: nonce.nonce } });
@@ -291,61 +291,35 @@ exports.getCSV = (req, res) => {
 
 exports.dashboard = (req, res) => {
 
-  User.findOne({ _id: req.userId })
-    .populate('role', "name")
-    .populate('transactions')
-    .exec(async (err, user) => {
-
-      if (err) {
-        return res.status(200).send({ message: err, status: "errors" });
+  try {
+    Transaction
+      .aggregate([{
+        $match: { "user": req.userId, platform: PLATFORM_TYPE_STAKING_IDO, type: TX_TYPE_LOCK }
+      },
+      {
+        $group: { _id: "$duration", amount: { $sum: '$amount' } }
       }
+      ])
+      .exec(async (err, deposits) => {
 
-      if (!user) {
-        return res.status(200).send({ message: err, status: "errors" });
-      }
-
-      try {
-
-        const resStats = await requestBotAPI("get", "stats?userId=2250&authCode=1ee9394573062b6dbe275d9c570d52f4")
-        const resCsv = await requestBotAPI("get", "csv?userId=1&authCode=ea66c06c1e1c05fa9f1aa39d98dc5bc1 ")
-        const daily_profit = resCsv.data.map(r => ({ date: r.period, profit: r.total_profit }))
-        const result = {
-          my_balance: resStats.data["current_balance"],
-          total_profit: resStats.data["current_balance"],
-          last_24h_profit: resStats.data["current_balance"],
-          total_currencies: resStats.data["total_currencies"],
-          daily_profit,
-          enabled: user.enabled,
-          deposit_history: user.transactions.filter(t => t.type === "Deposit"),
-          withdraw_history: user.transactions.filter(t => t.type === "Withdraw"),
-          profile: {
-            username: user.username,
-            email: user.email,
-            emailVerified: user.emailVerified,
-            phoneNumber: user.phoneNumber,
-            phoneVerified: user.phoneVerified,
-            address: user.address,
-            avatar: user.avatar,
-            city: user.city,
-            country: user.country,
-            zipCode: user.zipCode,
-            withdrawAddress: user.withdrawAddress,
-            evmAddress: user.evmAddress,
-            btcAddress: user.btcAddress,
-            apiKey: user.apiKey,
-            apiSecret: user.apiSecret,
-            enabled: user.enabled,
-            referralCode: user.referralCode,
-            leaderCode: user.leaderCode,
-            role: user.role
-          }
+        if (err) {
+          return res.status(500).send({ message: err, status: "errors" });
         }
-        return res.status(200).send({ data: result, status: RES_STATUS_SUCCESS });
-      } catch (err) {
-        return res.status(200).send({ message: err, status: "errors" });
-      }
 
-    })
+        let tier = getTier(deposits.map(item => ({ duration: item._id, amount: item.amount })))
+        let investment = 0;
+        deposits.forEach(item => {
+          investment += item.amount;
+        })
+
+        await User.updateOne({_id: req.userId}, {tier})
+
+        return res.status(200).send({ data: { investment, tier }, status: RES_STATUS_SUCCESS });
+      })
+  } catch (err) {
+    return res.status(200).send({ message: err, status: "errors" });
+  }
+
 }
 
 exports.checkVerification = (req, res) => {

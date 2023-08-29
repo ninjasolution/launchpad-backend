@@ -8,6 +8,7 @@ const IGOVesting = require("../abis/IGOVesting.json")
 const { ethers } = require("ethers");
 const { MerkleTree } = require("merkletreejs");
 const db = require("../models");
+const { tiers } = require("../config/static.source");
 
 require('dotenv').config();
 
@@ -18,11 +19,11 @@ class Service {
         this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider)
         this.igoFactoryContract = new ethers.Contract(igoFactoryAddr, IGOFactory.abi, this.wallet)
         this.igoDeployerContract = new ethers.Contract(igoDeployerAddr, IGODeployer.abi, this.wallet)
-        this.test()
     }
 
     async test() {
-       
+        let res = this.generateMerkleRootAndProof(this.generateAllocLeaves([{tagId: "tag1", account: "0x02fc14d01F4E073829276cc2f4f94Fb4EDe1e0c4", maxAllocation: "1034000", refundFee: 3, igoTokenPerPaymentToken: "45"}, {tagId: "tag1", account: "0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0", maxAllocation: "1085000", refundFee: 3, igoTokenPerPaymentToken: "45"}]))
+        console.log(res)
     }
 
     async createIGO(name, owner, _igoSetup, _contractSetup, _vestingSetup, _tags) {
@@ -83,7 +84,7 @@ class Service {
             ]
 
             let igoTx = await this.igoFactoryContract.createIGO(...igoArgs);
-           
+
             const igoReceipt = await igoTx.wait();
 
             const event = igoReceipt.events[5];
@@ -169,6 +170,26 @@ class Service {
 
     async recoverSignature(nonce = "", signature = "") {
         return await ethers.utils.verifyMessage(nonce.toString(), signature)
+    }
+
+    getTier(transactions) {
+        let weight = 0;
+        for (let i = 0; i < transactions.length; i++) {
+            let _tier = tiers.find(tier => tier.duration == transactions[i].duration && tier.minAmount <= transactions[i].amount && tier.maxAmount >= transactions[i].amount)
+            if (_tier) {
+                weight += _tier.weight;
+            }
+        }
+
+        let tier = {};  
+        for(let i=tiers.length-1 ; i>=0 ; i--) {
+          if(tiers[i].weight <= weight) {
+            tier = tiers[i];
+            break;
+          }
+        }
+
+        return tier;
     }
 
 

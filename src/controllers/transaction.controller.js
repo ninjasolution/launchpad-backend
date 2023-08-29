@@ -1,50 +1,78 @@
 const db = require("../models");
-const config = require("../config/index")
+const config = require("../config/index");
+const { getTier } = require("../service");
 const Transaction = db.transaction;
+const User = db.user;
 
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
 
-  const transaction = new Transaction({
-    type: req.body.type,
-    platform: req.body.platform,
-    project: req.body.project,
-    amount: req.body.amount,
-    coin: req.body.coin,
-    paymentMethod: req.body.paymentMethod,
-    chainId: req.body.chainId,
-    status: req.body.status,
-    hash: req.body.hash,
-    user: req.userId,
-  })
 
-  if(req.body.project) {
-    transaction.project = req.body.project
-  }
-  if(req.body.hash) {
-    transaction.hash = req.body.hash
-  }
-  
+  try {
+    const transaction = new Transaction({
+      type: req.body.type,
+      platform: req.body.platform,
+      project: req.body.project,
+      amount: req.body.amount,
+      coin: req.body.coin,
+      paymentMethod: req.body.paymentMethod,
+      chainId: req.body.chainId,
+      status: req.body.status,
+      duration: req.body.duration,
+      hash: req.body.hash,
+      user: req.userId,
+    })
 
-  transaction.save(async (err, _transaction) => {
-    if (err) {
-      console.log(err)
-      res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
-      return;
+    if (req.body.project) {
+      transaction.project = req.body.project
+    }
+    if (req.body.hash) {
+      transaction.hash = req.body.hash
     }
 
+    let transactions = await Transaction
+      .aggregate([{
+        $match: { "user": req.userId, platform: PLATFORM_TYPE_STAKING_IDO, type: TX_TYPE_LOCK }
+      },
+      {
+        $group: { _id: "$duration", amount: { $sum: '$amount' } }
+      }
+      ]).exec()
 
-    return res.status(200).send({
-      message: config.RES_MSG_SAVE_SUCCESS,
-      data: _transaction,
-      status: config.RES_STATUS_SUCCESS,
+    if (err) {
+      return res.status(500).send({ message: err, status: "errors" });
+    }
+
+    let tier = getTier(transactions.map(item => ({ duration: item._id, amount: item.amount })))
+    let investment = 0;
+    transactions.forEach(item => {
+      investment += item.amount;
+    })
+
+    await User.updateOne({ _id: req.userId }, { tier })
+
+    transaction.save(async (err, _transaction) => {
+      if (err) {
+        console.log(err)
+        res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
+        return;
+      }
+
+
+      return res.status(200).send({
+        message: config.RES_MSG_SAVE_SUCCESS,
+        data: _transaction,
+        status: config.RES_STATUS_SUCCESS,
+      });
     });
-  });
+  } catch {
+
+  }
 }
 
 exports.list = (req, res) => {
 
   let options = {}
-  if(req.query.type) {
+  if (req.query.type) {
     options.type = req.query.type
   }
 

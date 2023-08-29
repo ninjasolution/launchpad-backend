@@ -55,6 +55,9 @@ module.exports = (connection, autoIncrement) => {
     image: {
       type: String
     },
+    tier: {
+      type: Object
+    },
     nonce: {
       type: Number,
       default: 0
