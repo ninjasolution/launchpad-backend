@@ -33,6 +33,9 @@ module.exports = (connection, autoIncrement) => {
     accessType: {
       type: String
     },
+    open: {
+      type: Boolean
+    },
     startAt: {
       type: Number
     },

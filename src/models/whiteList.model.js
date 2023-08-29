@@ -7,12 +7,6 @@ module.exports = (connection, autoIncrement) => {
     address: {
       type: String,
     },
-    amount: {
-      type: String,
-    },
-    duration: {
-      type: Number,
-    },
     percent: {
       type: Number
     },

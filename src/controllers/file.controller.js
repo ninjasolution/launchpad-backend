@@ -37,7 +37,7 @@ exports.csvUploader = (req, res) => {
             }
 
             if (!user) {
-                res.status(404).send({ message: err, status: RES_STATUS_FAIL });
+                return res.status(404).send({ message: err, status: RES_STATUS_FAIL });
             }
 
             if (!req.file) {
@@ -51,40 +51,35 @@ exports.csvUploader = (req, res) => {
                 const words = req.file.originalname.split('.');
                 const fileType = words[words.length - 1];
                 const fileName = uuid.v1() + "." + fileType;
+                var whiteLists = [];
 
                 Project.findOne({ _id: req.body.projectId })
                     .exec(async (err, project) => {
                         if (err) {
-                            res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                            return;
+                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                         }
 
                         if (!project) {
-                            res.status(404).send({ message: err, status: RES_STATUS_FAIL });
+                            return res.status(404).send({ message: err, status: RES_STATUS_FAIL });
                         }
 
                         project.csv = fileName;
                         project.status = PROJECT_STATUS_SNAPSHOT;
-                        await project.save()
-                        var whiteLists = [];
+                        await project.save();
+
                         fs.createReadStream(`./files/${req.file.originalname}`)
                         .pipe(csv())
                         .on('data', async (row) => {
 
-                            let tier = tiers.find(item => item.minAmount < row.amount && item.maxAmount > row.amount);
-
                             whiteLists.push({
                                 address: row.address,
-                                amount: row.amount,
-                                duration: row.duration,
-                                percent: tier.percent * PERCENT_DIVISOR,
+                                percent: row.percent,
                                 project: project._id
                             })
-                           
                         })
                         .on('end', () => {
                           console.log('CSV file successfully processed');
-                          WhiteList.insertMany(rows)
+                          WhiteList.insertMany(whiteLists)
                           .then(() => {
                             return res.status(200).send({status: RES_STATUS_SUCCESS, data: RES_MSG_SAVE_SUCCESS});
                           }).catch(err => {

@@ -10,8 +10,7 @@ exports.list = (req, res) => {
     Collection.paginate({ createdBy: req.query.createdBy }, options, (err, collections) => {
 
         if (err) {
-            res.status(500).send({ message: err });
-            return;
+            return res.status(500).send({ message: err });
         }
 
         if (!collections) {

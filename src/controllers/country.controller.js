@@ -13,8 +13,7 @@ exports.create = (req, res) => {
 
   country.save(async (err, _country) => {
     if (err) {
-      res.status(400).send({ message: err, status: config.RES_STATUS_FAIL });
-      return;
+      return res.status(400).send({ message: err, status: config.RES_STATUS_FAIL });
     }
 
     return res.status(200).send({
@@ -30,8 +29,7 @@ exports.list = (req, res) => {
     .exec((err, countries) => {
 
       if (err) {
-        res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
-        return;
+        return res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
       }
 
       if (!countries) {
@@ -51,8 +49,7 @@ exports.update = (req, res) => {
     .exec((err, country) => {
 
       if (err) {
-        res.status(500).send({ message: err, status: config.RES_MSG_UPDATE_FAIL });
-        return;
+        return res.status(500).send({ message: err, status: config.RES_MSG_UPDATE_FAIL });
       }
 
       return res.status(200).send({

@@ -122,7 +122,7 @@ const savePayment = async (user, req, res, hash, transaction) => {
         await requestBotAPI("post", "deposit", data)
     }catch (error) {
         status = "Server Error"
-        res.status(200).send({message: "An error occured", status: "errors"});
+        return res.status(200).send({message: "An error occured", status: "errors"});
     }
     transaction.hash = hash;
     transaction.status = status;

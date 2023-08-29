@@ -63,8 +63,7 @@ exports.allUsers = (req, res) => {
     .exec((err, users) => {
 
       if (err) {
-        res.status(200).send({ message: err });
-        return;
+        return res.status(200).send({ message: err });
       }
 
       if (!users) {
@@ -81,8 +80,7 @@ exports.getUser = (req, res) => {
     .exec((err, user) => {
 
       if (err) {
-        res.status(500).send({ message: err });
-        return;
+        return res.status(500).send({ message: err });
       }
 
       if (!user) {

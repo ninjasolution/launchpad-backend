@@ -52,8 +52,7 @@ exports.list = (req, res) => {
     .exec((err, projects) => {
 
       if (err) {
-        res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
-        return;
+        return res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
       }
 
       if (!projects) {
@@ -73,8 +72,7 @@ exports.update = (req, res) => {
     .exec((err, Transaction) => {
 
       if (err) {
-        res.status(500).send({ message: err, status: config.RES_MSG_UPDATE_FAIL });
-        return;
+        return res.status(500).send({ message: err, status: config.RES_MSG_UPDATE_FAIL });
       }
 
       return res.status(200).send({
@@ -91,8 +89,7 @@ exports.delete = (req, res) => {
     .exec((err) => {
 
       if (err) {
-        res.status(500).send({ message: err, status: config.RES_MSG_DELETE_FAIL });
-        return;
+        return res.status(500).send({ message: err, status: config.RES_MSG_DELETE_FAIL });
       }
       return res.status(200).send({
         message: config.RES_MSG_DELETE_SUCCESS,

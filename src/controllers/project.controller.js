@@ -1,5 +1,4 @@
 const { ethers } = require("ethers");
-const { SignatureTransfer } = require("@uniswap/Permit2-sdk")
 const db = require("../models");
 const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL, permit2Addr, securityTokenAddr, chainId } = require("../config");
 const Project = db.project;
@@ -52,8 +51,8 @@ exports.create = async (req, res) => {
 
     let tagCount = req.body.tags.length;
     let tags = [];
-    for(let i=0 ; i<tagCount ; i++) {
-        let tag = new Tag(project.tags[i])
+    for (let i = 0; i < tagCount; i++) {
+        let tag = new Tag(_project.tags[i])
         tag = await tag.save();
         tags.push(tag._id);
     }
@@ -68,7 +67,7 @@ exports.create = async (req, res) => {
             return res.status(400).send({ message: err, status: RES_STATUS_FAIL });
         }
 
-        await Tag.updateMany({_id: {$in: tags}}, {project: _project._id});
+        await Tag.updateMany({ _id: { $in: tags } }, { project: _project._id });
 
         Project
             .findOne({ _id: _project._id })
@@ -124,6 +123,8 @@ exports.getProof = async (req, res) => {
     }
 
     Project.findOne({ _id: req.params.projectId })
+        .populate("tags")
+        .populate("curTag")
         .exec((err, project) => {
             if (err) {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
@@ -133,24 +134,6 @@ exports.getProof = async (req, res) => {
                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
-            let nonce = 1;
-            let deadline = ethers.constants.MaxUint256
-            const permit = {
-                permitted: {
-                    // token we are permitting to be transferred
-                    token: securityTokenAddr,
-                    // amount we are permitting to be transferred
-                    amount: ethers.utils.parseEther(req.params.amount)
-                },
-                // who can transfer the tokens
-                spender: project.igo.address,
-                nonce,
-                // signature deadline
-                deadline
-            };
-
-            const { domain, types, values } = SignatureTransfer.getPermitData(permit, permit2Addr, chainId)
-
             User.findOne({ _id: req.params.userId })
                 .exec((err, user) => {
                     if (err) {
@@ -159,9 +142,8 @@ exports.getProof = async (req, res) => {
                     if (!user) {
                         return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                     }
-                    let tag = project.funding.tags.find((tag => tag.title == req.params.tagId));
-                    if (!tag) return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
-                    if (tag.accessType == TAG_TYPE_PUBLIC) {
+                    if (project.curTag.accessType == TAG_TYPE_PUBLIC) {
+
                         Transaction
                             .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.userId })
                             .exec(async (err, transactions) => {
@@ -189,9 +171,9 @@ exports.getProof = async (req, res) => {
                                 let allocation = {
                                     tagId: req.params.tagId,
                                     account: user.wallet,
-                                    maxAllocation: ethers.utils.parseEther((project.token.totalSupply * tier.percent / 100).toString()).toString(),
+                                    maxAllocation: service.customParse((project.token.totalSupply * tier.percent / 100), 4).toString(),
                                     refundFee: 40,
-                                    igoTokenPerPaymentToken: tag.price,
+                                    igoTokenPerPaymentToken: project.curTag.price,
                                 }
                                 let allocations = [allocation, allocation]
 
@@ -201,11 +183,12 @@ exports.getProof = async (req, res) => {
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,
-                                    data: { proof: proofs[0], allocation, tier, nonce, deadline, domain, types, values },
+                                    data: { proof: proofs[0], allocation, tier },
                                     status: RES_STATUS_SUCCESS,
                                 });
                             })
                     } else {
+
                         WhiteList
                             .findOne({ project: req.params.projectId, address: user.wallet })
                             .exec(async (err, whiteList) => {
@@ -218,14 +201,12 @@ exports.getProof = async (req, res) => {
                                     return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                                 }
 
-                                let amount = whiteList.amount
-                                let tier = await Tier.findOne({ minAmount: { $lt: amount }, maxAmount: { $gt: amount } })
                                 let allocation = {
                                     tagId: req.params.tagId,
                                     account: user.wallet,
-                                    maxAllocation: ethers.utils.parseEther(project.token.totalSupply * tier.percent / 100),
+                                    maxAllocation: ethers.utils.parseEther(project.token.totalSupply * whiteList.percent / 100),
                                     refundFee: 40,
-                                    igoTokenPerPaymentToken: tag.maxAllocation.price,
+                                    igoTokenPerPaymentToken: project.curTag.price,
                                 }
                                 let allocations = [allocation, allocation]
 
@@ -235,16 +216,12 @@ exports.getProof = async (req, res) => {
 
                                 return res.status(200).send({
                                     message: RES_MSG_SUCESS,
-                                    data: { root, proof: proofs[0], tier, nonce, deadline, domain, types, values },
+                                    data: { root, proof: proofs[0] },
                                     status: RES_STATUS_SUCCESS,
                                 });
                             })
                     }
-
                 })
-
-
-
         })
 
 }
@@ -317,29 +294,28 @@ exports.setVisible = async (req, res) => {
 
 exports.updateTag = async (req, res) => {
 
-    Project.findOne({ _id: req.params.projectId })
-        .exec(async (err, project) => {
+    Tag.findOne({ project: req.params.projectId, title: req.body.title })
+        .exec(async (err, tag) => {
             if (err) {
                 console.log(err)
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
-            let newProject = project;
-            newProject.funding.tags = project.funding.tags.map((item) => {
-                if (item.title == req.body.title) {
-                    return req.body
-                } else return item;
-            })
-            newProject.curTag = req.body;
-            newProject = await newProject.save()
+            if (!tag) {
+                return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+            }
 
-            return res.status(200).send({
-                message: RES_MSG_SUCESS,
-                data: project,
-                status: RES_STATUS_SUCCESS,
-            });
+            tag.open = req.body.open;
+            Project.updateOne({ _id: req.params.projectId }, { curTag: tag._id })
+                .exec((err, project) => {
+
+                    return res.status(200).send({
+                        message: RES_MSG_SUCESS,
+                        data: project,
+                        status: RES_STATUS_SUCCESS,
+                    });
+                })
         })
-
 }
 
 exports.approve = async (req, res) => {
@@ -360,11 +336,12 @@ exports.approve = async (req, res) => {
             let summedMaxTagCap = project.tags.reduce((sum, item) => {
                 return Number.parseInt(item.maxCap) + Number.parseInt(sum);
             }, 0)
+
             let igoSetUp = {
                 igoVesting: project.paymentCoin.address,
                 paymentToken: project.paymentCoin.address,
-                grandTotal: ethers.utils.parseEther((10 * summedMaxTagCap).toString()),
-                summedMaxTagCap: ethers.utils.parseEther((summedMaxTagCap * 2).toString())
+                grandTotal: service.customParse((10 * summedMaxTagCap).toString()),
+                summedMaxTagCap: service.customParse((summedMaxTagCap * 2).toString())
             };
 
             let contractSetup = {
@@ -482,7 +459,6 @@ exports.genSnapshot = async (req, res) => {
                     WhiteList.find({ project: req.query.projectId })
                         .exec((err, whiteLists) => {
                             if (err) {
-                                console.log(err)
                                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                             }
 
@@ -514,10 +490,19 @@ exports.genSnapshot = async (req, res) => {
 
                             for (let i = 0; i < whiteLists.length; i++) {
                                 snapshot.totalUser += 1;
+
+                                if(tiers[tiers.length - 1].percent < whiteLists[i].percent) {
+                                    snapshot.users.tier10 += 1;
+                                }
                                 for (let j = tiers.length - 1; j >= 0; j--) {
-                                    if (tiers[j].minAmount <= whiteLists[i].amount && tiers[j].maxAmount >= whiteLists[i].amount && tiers[j].duration < whiteLists[i].duration) {
-                                        snapshot.users[`tier${j}`] += 1;
-                                        break;
+
+                                    if(j > 0) {
+                                        if (tiers[j].percent >= whiteLists[i].percent && tiers[j - 1].percent >= whiteLists[i].percent) {
+                                            snapshot.users[`tier${j}`] += 1;
+                                            break;
+                                        }
+                                    }else {
+                                        snapshot.users.public += 1;
                                     }
                                 }
                             }
