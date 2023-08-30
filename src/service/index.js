@@ -22,7 +22,7 @@ class Service {
     }
 
     async test() {
-        let res = this.generateMerkleRootAndProof(this.generateAllocLeaves([{tagId: "tag1", account: "0x02fc14d01F4E073829276cc2f4f94Fb4EDe1e0c4", maxAllocation: "1034000", refundFee: 3, igoTokenPerPaymentToken: "45"}, {tagId: "tag1", account: "0x04E117247e2F29d0ff11B99b3df6BFb0FB2Ed2F0", maxAllocation: "1085000", refundFee: 3, igoTokenPerPaymentToken: "45"}]))
+        let res = await this.igoFactoryContract.getIgosDetails(0, 4);
         console.log(res)
     }
 

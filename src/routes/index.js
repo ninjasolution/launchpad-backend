@@ -60,6 +60,7 @@ router.get("/country/list", countryController.list)
 
 //Project
 router.get("/project/list", projectController.list)
+router.get("/project/my-projects", middlewares.authJwt.verifyToken, projectController.getMyProjects)
 router.post("/project/create", middlewares.authJwt.verifyToken, projectController.create)
 router.put("/project", middlewares.authJwt.verifyToken, projectController.update)
 router.put("/project/approve", middlewares.authJwt.verifyToken, projectController.approve)

@@ -1,6 +1,6 @@
 const { ethers } = require("ethers");
 const db = require("../models");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL, permit2Addr, securityTokenAddr, chainId, PROJECT_STATUS_FILEHASH } = require("../config");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, PLATFORM_TYPE_STAKING_IDO, RES_MSG_FAIL, permit2Addr, securityTokenAddr, chainId, PROJECT_STATUS_FILEHASH, PLATFORM_TYPE_INVEST_IGO } = require("../config");
 const Project = db.project;
 const WhiteList = db.whiteList;
 const User = db.user;
@@ -112,6 +112,50 @@ exports.get = async (req, res) => {
                 status: RES_STATUS_SUCCESS,
             });
         })
+
+}
+
+exports.getMyProjects = async (req, res) => {
+
+    Transaction.aggregate([{
+        $match: { "user": req.userId, platform: PLATFORM_TYPE_INVEST_IGO }
+    },
+    {
+        $group: { _id: "$project", amount: { $sum: '$amount' } }
+    }
+    ]).exec((err, transactions) => {
+
+        if (err) {
+            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+        }
+
+        if (!transactions) {
+            return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+        }
+
+        Project
+            .find({ _id: {"$in": transactions.map(item => item._id)} })
+            .populate("paymentCoin")
+            .populate("createdBy")
+            .populate("chain")
+            .populate("tags")
+            .populate("curTag")
+            .exec((err, projects) => {
+                if (err) {
+                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                }
+    
+                if (!projects) {
+                    return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+                }
+    
+                return res.status(200).send({
+                    message: RES_MSG_SUCESS,
+                    data: projects,
+                    status: RES_STATUS_SUCCESS,
+                });
+            })
+    })
 
 }
 
@@ -253,7 +297,7 @@ exports.updateTag = async (req, res) => {
 
             tag.open = req.body.open;
             await tag.save();
-            
+
             Project.updateOne({ _id: req.params.projectId }, { curTag: tag._id })
                 .exec((err, project) => {
 
