@@ -135,7 +135,6 @@ class Service {
         let rawEncoded;
         let leaves = [];
         let length = allocations.length;
-
         for (let i = 0; i < length; ++i) {
             rawEncoded = ethers.utils.defaultAbiCoder.encode(
                 [

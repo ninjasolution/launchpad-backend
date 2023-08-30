@@ -152,54 +152,18 @@ exports.getProof = async (req, res) => {
                             }
 
                             if (!whiteList) {
-                                Transaction
-                                    .find({ platform: PLATFORM_TYPE_STAKING_IDO, user: req.userId })
-                                    .exec(async (err, transactions) => {
 
-                                        if (err) {
-                                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                                        }
 
-                                        if (!transactions) {
-                                            return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
-                                        }
-
-                                        let tier = service.getTier(transactions)
-                                        let allocation = {
-                                            tagId: req.params.tagId,
-                                            account: user.wallet,
-                                            maxAllocation: service.customParse((project.token.totalSupply * tier.percent / 100), 4).toString(),
-                                            refundFee: 40,
-                                            igoTokenPerPaymentToken: project.curTag.price,
-                                        }
-                                        let allocations = [allocation, allocation]
-
-                                        let leaves = service.generateAllocLeaves(allocations)
-                                        let { root, proofs } = service.generateMerkleRootAndProof(leaves);
-
-                                        return res.status(200).send({
-                                            message: RES_MSG_SUCESS,
-                                            data: { proof: proofs[0], allocation, tier },
-                                            status: RES_STATUS_SUCCESS,
-                                        });
-                                    })
+                                return res.status(404).send({
+                                    message: RES_MSG_DATA_NOT_FOUND,
+                                    status: RES_STATUS_FAIL,
+                                });
                             }
 
-                            let allocation = {
-                                tagId: req.params.tagId,
-                                account: user.wallet,
-                                maxAllocation: service.customParse(project.token.totalSupply * whiteList.percent / 100, 4),
-                                refundFee: 40,
-                                igoTokenPerPaymentToken: project.curTag.price,
-                            }
-                            let allocations = [allocation, allocation]
-
-                            let leaves = service.generateAllocLeaves(allocations)
-                            let { root, proofs } = service.generateMerkleRootAndProof(leaves);
 
                             return res.status(200).send({
                                 message: RES_MSG_SUCESS,
-                                data: { proof: proofs[0], allocation },
+                                data: { proof: whiteList.proof, allocation: whiteList.allocation },
                                 status: RES_STATUS_SUCCESS,
                             });
                         })
@@ -288,6 +252,8 @@ exports.updateTag = async (req, res) => {
             }
 
             tag.open = req.body.open;
+            await tag.save();
+            
             Project.updateOne({ _id: req.params.projectId }, { curTag: tag._id })
                 .exec((err, project) => {
 

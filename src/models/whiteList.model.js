@@ -10,6 +10,8 @@ module.exports = (connection, autoIncrement) => {
     percent: {
       type: Number
     },
+    proof: [],
+    allocation: Object,
     project: {
       type: Number,
       ref: "Project"

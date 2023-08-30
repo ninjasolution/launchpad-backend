@@ -83,7 +83,6 @@ exports.csvUploader = (req, res) => {
                             })
                             .on('end', () => {
                                 console.log('CSV file successfully processed');
-                                WhiteList.insertMany(whiteLists)
 
                                 User.find({ wallet: { $nin: whiteLists.map(item => item.address) } })
                                     .exec(async (err, users) => {
@@ -93,23 +92,37 @@ exports.csvUploader = (req, res) => {
                                         }
 
                                         if (users) {
-                                            let percents = whiteLists;
 
                                             for (let i = 0; i < users.length; i++) {
-                                                if(user?.tier) {
-                                                    percents.push({ address: users[i].address, percent: user.tier.percent })
+                                                if(users[i].tier) {
+                                                    whiteLists.push({ address: users[i].address, percent: user.tier.percent, project: project._id })
                                                 }
                                             }
 
-                                            let leaves = generateAllocLeaves(percents.map(percent => ({
-                                                tagId: project.curTag.title,
-                                                account: percent.address,
-                                                maxAllocation: service.customParse((project.token.totalSupply * percent.percent / 100), 4),
-                                                refundFee: "40",
-                                                igoTokenPerPaymentToken: project.curTag.price,
-                                            })))
+                                            whiteLists = whiteLists.map(item => ({
+                                                ...item,
+                                                allocation: {
+                                                    tagId: project.curTag.title,
+                                                    account: item.address,
+                                                    maxAllocation: service.customParse((project.token.totalSupply * item.percent / 100), 4),
+                                                    refundFee: "40",
+                                                    igoTokenPerPaymentToken: project.curTag.price,
+                                                }
+                                            }));
+
+                                            let leaves = generateAllocLeaves(whiteLists.map(item => item.allocation))
                                             let { root, proofs } = generateMerkleRootAndProof(leaves);
 
+                                            let newList= [];
+                                            let count = whiteLists.length;
+                                            for(let i=0 ; i<count ; i++) {
+                                                newList.push({
+                                                    ...whiteLists[i],
+                                                    proof: proofs[i]
+                                                })
+                                            }
+
+                                            await WhiteList.insertMany(newList);
                                             project.rootHash = root;
                                             await project.save();
 
