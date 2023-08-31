@@ -1,4 +1,4 @@
-const { RPC, securityTokenAddr, permit2Addr, igoFactoryAddr, igoDeployerAddr } = require("../config");
+const { RPC, securityTokenAddr, igoFactoryAddr, igoDeployerAddr } = require("../config");
 const ERC20 = require("../abis/ERC20.json")
 const IGOFactory = require("../abis/IGOFactory.json")
 const IGODeployer = require("../abis/IGODeployer.json")
@@ -32,7 +32,6 @@ class Service {
             let igoSetUp = {
                 "vestingContract": _igoSetup.paymentToken,
                 "paymentToken": _igoSetup.paymentToken,
-                "permit2": permit2Addr, // bsc
                 "grandTotal": _igoSetup.grandTotal,
                 "summedMaxTagCap": _igoSetup.summedMaxTagCap,
                 "refundFeeDecimals": "2"
