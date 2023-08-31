@@ -261,7 +261,6 @@ exports.delete = (req, res) => {
 
 exports.dashboard = (req, res) => {
 
-  console.log("---------")
   try {
     Transaction
       .aggregate([{

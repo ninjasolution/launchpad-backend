@@ -7,9 +7,11 @@ const Role = db.role;
 const verifyToken = (req, res, next) => {
   let token = req.headers["x-auth-token"];
 
+
   if (!token) {
-    return res.status(200).send({ message: "No token provided!", status: "errors" });
+    return res.status(403).send({ message: "No token provided!", status: "errors" });
   }
+
 
   jwt.verify(token, securityCode, (err, decoded) => {
     if (err) {

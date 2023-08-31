@@ -6,7 +6,6 @@ const User = db.user;
 
 exports.create = async (req, res) => {
 
-
   try {
     const transaction = new Transaction({
       type: req.body.type,
@@ -22,25 +21,16 @@ exports.create = async (req, res) => {
       user: req.userId,
     })
 
-    if (req.body.project) {
-      transaction.project = req.body.project
-    }
-    if (req.body.hash) {
-      transaction.hash = req.body.hash
-    }
-
     let transactions = await Transaction
       .aggregate([{
-        $match: { "user": req.userId, platform: PLATFORM_TYPE_STAKING_IDO, type: TX_TYPE_LOCK }
+        $match: { "user": req.userId, platform: config.PLATFORM_TYPE_STAKING_IDO, type: config.TX_TYPE_LOCK }
       },
       {
         $group: { _id: "$duration", amount: { $sum: '$amount' } }
       }
       ]).exec()
 
-    if (err) {
-      return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-    }
+
 
     let tier = getTier(transactions.map(item => ({ duration: item._id, amount: item.amount })))
     let investment = 0;
@@ -64,8 +54,12 @@ exports.create = async (req, res) => {
         status: config.RES_STATUS_SUCCESS,
       });
     });
-  } catch {
-
+  } catch (err) {
+    console.log(err)
+    return res.status(500).send({
+      message: config.RES_MSG_SAVE_FAIL,
+      status: config.RES_STATUS_FAIL,
+    });
   }
 }
 

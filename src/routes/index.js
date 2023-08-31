@@ -43,7 +43,7 @@ router.post("/admin/upload-social-raffle", [middlewares.authJwt.verifyToken, mid
 router.get("/user", middlewares.authJwt.verifyToken, userController.allUsers);
 router.get("/user/check-verification", middlewares.authJwt.verifyToken, userController.checkVerification);
 router.delete("/user/:id([0-9]+)", [middlewares.authJwt.verifyToken, middlewares.authJwt.isAdmin], userController.delete);
-router.get("/dashboard", [middlewares.authJwt.verifyToken], userController.dashboard);
+router.get("/dashboard", middlewares.authJwt.verifyToken, userController.dashboard);
 router.get("/payment-info", [middlewares.authJwt.verifyToken], userController.getpaymentinfo);
 router.post("/withdraw", [middlewares.authJwt.verifyToken], userController.withdraw);
 
