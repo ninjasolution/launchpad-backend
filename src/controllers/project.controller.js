@@ -204,10 +204,17 @@ exports.getProof = async (req, res) => {
                                 });
                             }
 
+                            let allocation = {
+                                tagId: project.curTag.title,
+                                account: user.wallet,
+                                maxAllocation: service.customParse((project.token.totalSupply * whiteList.percent / 100), 4),
+                                refundFee: "40",
+                                igoTokenPerPaymentToken: project.curTag.price,
+                            }
 
                             return res.status(200).send({
                                 message: RES_MSG_SUCESS,
-                                data: { proof: whiteList.proof, allocation: whiteList.allocation },
+                                data: { proof: whiteList.proof, allocation },
                                 status: RES_STATUS_SUCCESS,
                             });
                         })

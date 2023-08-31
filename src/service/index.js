@@ -86,15 +86,14 @@ class Service {
 
             const igoReceipt = await igoTx.wait();
 
-            const event = igoReceipt.events[5];
-            console.log(event);
+            const event = igoReceipt.events[6];
 
             return {
-                igo: event.args[0],
-                vesting: event.args[1]
+                igo: event.args[1],
+                vesting: event.args[2]
             }
         } catch (err) {
-            console.log("err")
+            console.log(err)
             return {
                 igo: null,
                 vesting: null

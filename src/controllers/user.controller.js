@@ -1,5 +1,5 @@
 const { ethers } = require("ethers");
-const { SUBADMIN, RES_STATUS_SUCCESS, PLATFORM_TYPE_STAKING_IDO, TX_TYPE_DEPOSIT, TX_TYPE_LOCK } = require("../config");
+const { SUBADMIN, RES_STATUS_SUCCESS, PLATFORM_TYPE_STAKING_IDO, TX_TYPE_DEPOSIT, TX_TYPE_LOCK, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND } = require("../config");
 const { requestBotAPI } = require("../helpers");
 const db = require("../models");
 const { getRndInteger, getTier } = require("../service");
@@ -17,13 +17,13 @@ exports.create = async (req, res) => {
   if (req.body.role) {
     Role.findOne({ name: req.body.role }, (err, role) => {
       if (err) {
-        return res.status(200).send({ message: err, status: "errors" });
+        return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
       user.role = role._id;
       user.save(err => {
         if (err) {
-          return res.status(200).send({ message: err, status: "errors" });
+          return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
         }
 
         return res.status(200).send({ message: err, data: user, status: false });
@@ -33,14 +33,14 @@ exports.create = async (req, res) => {
   } else {
     Role.findOne({ name: SUBADMIN }, (err, role) => {
       if (err) {
-        return res.status(200).send({ message: "Role doesn't exist.", status: "errors" });
+        return res.status(200).send({ message: "Role doesn't exist.", status: RES_STATUS_FAIL });
 
       }
 
       user.role = role._id;
       user.save(async (err, nUser) => {
         if (err) {
-          return res.status(200).send({ message: `E11000 duplicate key error collection: users index: email_1 dup key: { email: ${req.body.email}}`, status: "errors" });
+          return res.status(200).send({ message: `E11000 duplicate key error collection: users index: email_1 dup key: { email: ${req.body.email}}`, status: RES_STATUS_FAIL });
 
         }
         var token = jwt.sign({ id: rUser._id }, securityCode, {
@@ -85,7 +85,7 @@ exports.getUser = (req, res) => {
       }
 
       if (!user) {
-        return res.status(404).send({ message: "User Not found.", status: "errors" });
+        return res.status(404).send({ message: "User Not found.", status: RES_STATUS_FAIL });
       }
 
       return res.status(200).send({ status: RES_STATUS_SUCCESS, data: user });
@@ -102,7 +102,7 @@ exports.getUnApprovedAdmins = (req, res) => {
       }
 
       if (!role) {
-        return res.status(404).send({ message: "Role Not found.", status: "errors" });
+        return res.status(404).send({ message: "Role Not found.", status: RES_STATUS_FAIL });
       }
 
       User.find({
@@ -117,7 +117,7 @@ exports.getUnApprovedAdmins = (req, res) => {
           }
 
           if (!users) {
-            return res.status(404).send({ message: "Users Not found.", status: "errors" });
+            return res.status(404).send({ message: "Users Not found.", status: RES_STATUS_FAIL });
           }
 
           return res.status(200).send({ status: RES_STATUS_SUCCESS, data: users });
@@ -201,12 +201,12 @@ exports.update = (req, res) => {
     .exec(async (err, user) => {
 
       if (err) {
-        res.status(200).send({ message: err, status: "errors" });
+        res.status(200).send({ message: err, status: RES_STATUS_FAIL });
         return;
       }
 
       if (!user) {
-        return res.status(200).send({ message: "User Not found.", status: "errors" });
+        return res.status(200).send({ message: "User Not found.", status: RES_STATUS_FAIL });
       }
 
       user.name = req.body.name;
@@ -219,7 +219,7 @@ exports.update = (req, res) => {
 
       user.save(err => {
         if (err) {
-          return res.status(200).send({ message: err, status: "errors" });
+          return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
         }
         return res.status(200).json({ status: RES_STATUS_SUCCESS, data: user });
       });
@@ -231,19 +231,19 @@ exports.approve = (req, res) => {
     .exec(async (err, user) => {
 
       if (err) {
-        res.status(200).send({ message: err, status: "errors" });
+        res.status(200).send({ message: err, status: RES_STATUS_FAIL });
         return;
       }
 
       if (!user) {
-        return res.status(200).send({ message: "User Not found.", status: "errors" });
+        return res.status(200).send({ message: "User Not found.", status: RES_STATUS_FAIL });
       }
 
       user.status = 1;
 
       user.save(err => {
         if (err) {
-          return res.status(200).send({ message: err, status: "errors" });
+          return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
         }
         return res.status(200).json({ status: RES_STATUS_SUCCESS, data: user });
       });
@@ -258,39 +258,10 @@ exports.delete = (req, res) => {
 };
 
 
-exports.getCSV = (req, res) => {
-
-  User.findOne({ _id: req.params.id })
-    .populate('role', "name")
-    .exec(async (err, user) => {
-
-      if (err) {
-
-        return res.status(200).send({ message: err, status: "errors" });
-      }
-
-      if (!user) {
-        return res.status(404).send({ message: "User Not found.", status: "errors" });
-      }
-
-      var resStats;
-      try {
-        resStats = await axios.post(`${process.env.BOT_API}/api/csv`, {
-          userId: 2250,
-          authCode: "1ee9394573062b6dbe275d9c570d52f4",
-          // userId: req.userId,
-          // authCode: user.authCode,
-        })
-      } catch (err) {
-        return res.status(200).send({ message: err, status: "errors" });
-      }
-
-      return res.status(200).send({ data: resStats.data });
-    })
-}
 
 exports.dashboard = (req, res) => {
 
+  console.log("---------")
   try {
     Transaction
       .aggregate([{
@@ -303,7 +274,11 @@ exports.dashboard = (req, res) => {
       .exec(async (err, deposits) => {
 
         if (err) {
-          return res.status(500).send({ message: err, status: "errors" });
+          return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+        }
+
+        if (!deposits) {
+          return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
         }
 
         let tier = getTier(deposits.map(item => ({ duration: item._id, amount: item.amount })))
@@ -317,7 +292,7 @@ exports.dashboard = (req, res) => {
         return res.status(200).send({ data: { investment, tier }, status: RES_STATUS_SUCCESS });
       })
   } catch (err) {
-    return res.status(200).send({ message: err, status: "errors" });
+    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
   }
 
 }
@@ -328,11 +303,11 @@ exports.checkVerification = (req, res) => {
     .exec(async (err, user) => {
 
       if (err) {
-        return res.status(200).send({ message: err, status: "errors" });
+        return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
       if (!user) {
-        return res.status(200).send({ message: err, status: "errors" });
+        return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
       try {
@@ -344,7 +319,7 @@ exports.checkVerification = (req, res) => {
           }, status: RES_STATUS_SUCCESS
         });
       } catch (err) {
-        return res.status(200).send({ message: err, status: "errors" });
+        return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
     })
@@ -356,11 +331,11 @@ exports.getpaymentinfo = (req, res) => {
     .exec(async (err, user) => {
 
       if (err) {
-        return res.status(200).send({ message: err, status: "errors" });
+        return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
       if (!user) {
-        return res.status(200).send({ message: err, status: "errors" });
+        return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
       }
 
       const result = {
@@ -380,16 +355,16 @@ exports.withdraw = (req, res) => {
   })
     .exec(async (err, user) => {
       if (err) {
-        res.status(200).send({ message: "Incorrect id or password", status: "errors" });
+        res.status(200).send({ message: "Incorrect id or password", status: RES_STATUS_FAIL });
         return;
       }
 
       if (!user) {
-        return res.status(200).send({ message: "User doesn't exist", status: "errors" });
+        return res.status(200).send({ message: "User doesn't exist", status: RES_STATUS_FAIL });
       }
 
       if (!user.withdrawAddress) {
-        return res.status(200).send({ message: "Please put withdraw address", status: "errors" });
+        return res.status(200).send({ message: "Please put withdraw address", status: RES_STATUS_FAIL });
       }
 
       try {
@@ -404,7 +379,7 @@ exports.withdraw = (req, res) => {
 
 
       } catch (error) {
-        return res.status(200).send({ message: "The amount exceeds the total funds", status: "errors" });
+        return res.status(200).send({ message: "The amount exceeds the total funds", status: RES_STATUS_FAIL });
       }
 
       try {
@@ -419,7 +394,7 @@ exports.withdraw = (req, res) => {
 
           if (err) {
             console.log("error", err);
-            return res.status(200).send({ message: err, status: "errors" });
+            return res.status(200).send({ message: err, status: RES_STATUS_FAIL });
           }
 
           user.transactions.push(transaction);
@@ -429,7 +404,7 @@ exports.withdraw = (req, res) => {
         });
 
       } catch (error) {
-        return res.status(200).send({ message: error, status: "errors" });
+        return res.status(200).send({ message: error, status: RES_STATUS_FAIL });
       }
     })
 

@@ -56,7 +56,7 @@ const isUser = (req, res, next) => {
       return res.status(404).send({ message: "User not found", status: false });
     }
 
-    if(user.role?.name == USER) {
+    if(user.role?.name) {
       next();
     }else {
       res.status(403).send({ message: "Invalid Role" });

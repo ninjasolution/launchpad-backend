@@ -94,28 +94,25 @@ exports.csvUploader = (req, res) => {
                                         if (users) {
 
                                             for (let i = 0; i < users.length; i++) {
-                                                if(users[i].tier) {
+                                                if (users[i].tier) {
                                                     whiteLists.push({ address: users[i].address, percent: user.tier.percent, project: project._id })
                                                 }
                                             }
 
-                                            whiteLists = whiteLists.map(item => ({
-                                                ...item,
-                                                allocation: {
-                                                    tagId: project.curTag.title,
-                                                    account: item.address,
-                                                    maxAllocation: service.customParse((project.token.totalSupply * item.percent / 100), 4),
-                                                    refundFee: "40",
-                                                    igoTokenPerPaymentToken: project.curTag.price,
-                                                }
+                                            let allocations = whiteLists.map(item => ({
+                                                tagId: project.curTag.title,
+                                                account: item.address,
+                                                maxAllocation: service.customParse((project.token.totalSupply * item.percent / 100), 4),
+                                                refundFee: "40",
+                                                igoTokenPerPaymentToken: project.curTag.price,
                                             }));
 
-                                            let leaves = generateAllocLeaves(whiteLists.map(item => item.allocation))
+                                            let leaves = generateAllocLeaves(allocations)
                                             let { root, proofs } = generateMerkleRootAndProof(leaves);
 
-                                            let newList= [];
+                                            let newList = [];
                                             let count = whiteLists.length;
-                                            for(let i=0 ; i<count ; i++) {
+                                            for (let i = 0; i < count; i++) {
                                                 newList.push({
                                                     ...whiteLists[i],
                                                     proof: proofs[i]
@@ -127,7 +124,7 @@ exports.csvUploader = (req, res) => {
                                             await project.save();
 
                                             return res.status(200).send({ status: RES_STATUS_SUCCESS, data: RES_MSG_SAVE_SUCCESS });
-                                        }else {
+                                        } else {
                                             return res.status(4004).send({ status: RES_STATUS_FAIL, data: RES_MSG_SAVE_SUCCESS });
                                         }
 

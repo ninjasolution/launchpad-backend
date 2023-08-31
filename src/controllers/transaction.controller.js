@@ -39,7 +39,7 @@ exports.create = async (req, res) => {
       ]).exec()
 
     if (err) {
-      return res.status(500).send({ message: err, status: "errors" });
+      return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
     }
 
     let tier = getTier(transactions.map(item => ({ duration: item._id, amount: item.amount })))
