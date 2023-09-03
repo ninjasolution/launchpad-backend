@@ -24,6 +24,34 @@ exports.categories = (req, res) => {
     })
 };
 
+exports.list = (req, res) => {
+
+  let option = {}
+
+  if(req.query.status) {
+    option.status = req.query.status;
+  }
+
+  Proposal.find(option)
+  .populate("category")
+  .populate("owner")
+  .exec(async (err, proposals) => {
+    if (err) {
+      console.log(err)
+      return res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
+    }
+
+    if(!proposals) {
+      return res.status(404).send({ message: config.RES_MSG_DATA_NOT_FOUND, status: config.RES_STATUS_FAIL });
+    }
+
+    return res.status(200).send({
+      message: config.RES_MSG_SAVE_SUCCESS,
+      data: proposals,
+      status: config.RES_STATUS_SUCCESS,
+    });
+  });
+}
 
 
 exports.create = (req, res) => {
@@ -35,7 +63,7 @@ exports.create = (req, res) => {
   proposal.save(async (err, proposal) => {
     if (err) {
       console.log(err)
-      return res.status(400).send({ message: err, status: "errors" });
+      return res.status(400).send({ message: err, status: config.RES_STATUS_FAIL });
     }
 
     return res.status(200).send({

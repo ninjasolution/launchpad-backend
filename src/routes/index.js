@@ -75,6 +75,7 @@ router.put("/project/tag/:projectId/:tagId", middlewares.authJwt.verifyToken, pr
 router.post("/transaction", middlewares.authJwt.verifyToken, transactionController.create)
 
 //Proposal
+router.get("/proposal/list", middlewares.authJwt.verifyToken, daoController.list)
 router.post("/proposal", middlewares.authJwt.verifyToken, daoController.create)
 router.get("/category", middlewares.authJwt.verifyToken, daoController.categories)
 
