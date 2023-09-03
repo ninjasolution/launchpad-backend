@@ -14,7 +14,7 @@ const options = {
 };
 
 db.mongoose = mongoose;
-db.connection = db.mongoose.createConnection(`mongodb://uvuhhk9alfi9yvwv0vxb:LFdipOL8D4wzxqWr77h@bpkhoww2gbsh1zwyyske-mongodb.services.clever-cloud.com:2899/bpkhoww2gbsh1zwyyske`)
+db.connection = db.mongoose.createConnection(`mongodb://usjkxlgklwmbbp8ssj9k:RzRKELibpVOZjkSNkIO@bixhoxq33cknhojilvm4-mongodb.services.clever-cloud.com:2692/bixhoxq33cknhojilvm4`)
 // db.connection = db.mongoose.createConnection(`mongodb://127.0.0.1:27017/launchpad`)
 autoIncrement.initialize(db.connection);
 
@@ -31,6 +31,8 @@ db.whiteList = require("./whiteList.model")(db.connection, autoIncrement);
 db.tier = require("./tier.model")(db.connection, autoIncrement);
 db.nonce = require("./nonce.model")(db.connection, autoIncrement);
 db.tag = require("./tag.model")(db.connection, autoIncrement);
+db.category = require("./category.model")(db.connection, autoIncrement);
+db.proposal = require("./proposal.model")(db.connection, autoIncrement);
 
 
 db.ROLES = [SUPERADMIN, SUBADMIN, USER]

@@ -2035,4 +2035,21 @@ module.exports = {
       mobileCode: '+263',
     },
   ],
+  categories: [
+    {
+      name: "Blockchain"
+    },
+    {
+      name: "Community"
+    },
+    {
+      name: "Content"
+    },
+    {
+      name: "Defi"
+    },
+    {
+      name: "NFT"
+    },
+  ]
 }

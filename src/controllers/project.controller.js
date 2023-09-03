@@ -255,19 +255,44 @@ exports.pushHash = async (req, res) => {
 
 exports.update = async (req, res) => {
 
-    Project.updateOne({ _id: req.body._id }, req.body)
-        .exec((err, project) => {
-            if (err) {
-                console.log(err)
-                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-            }
+    try {
 
-            return res.status(200).send({
-                message: RES_MSG_SUCESS,
-                data: project,
-                status: RES_STATUS_SUCCESS,
-            });
-        })
+        let tagIds = [];
+        if(req.body.tags && req.body.tags.length) {
+            for(let i=0 ; i<req.body.tags.length ; i++) {
+                let tag = req.body.tags[i];
+    
+                if(tag._id) {
+                    await Tag.updateOne({_id: tag._id}, tag)
+                }else {
+                    let _newTag = new Tag(tag);
+                    tag = await _newTag.save();
+                }
+                tagIds.push(tag._id);
+            }
+        }
+
+        let project = {
+            ...req.body,
+            tags: tagIds
+        }
+    
+        Project.updateOne({ _id: req.body._id }, project)
+            .exec((err, project) => {
+                if (err) {
+                    console.log(err)
+                    return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                }
+    
+                return res.status(200).send({
+                    message: RES_MSG_SUCESS,
+                    data: project,
+                    status: RES_STATUS_SUCCESS,
+                });
+            })
+    }catch (err) {
+
+    }
 
 }
 

@@ -16,6 +16,7 @@ const chainController = require("../controllers/chain.controller");
 const coinController = require("../controllers/coin.controller");
 const countryController = require("../controllers/country.controller");
 const transactionController = require("../controllers/transaction.controller");
+const daoController = require("../controllers/dao.controller");
 
 router.post("/auth/signup", [middlewares.verifySignUp.checkRolesExisted], authController.signup)
 router.post("/auth/signin", authController.signin)
@@ -73,6 +74,9 @@ router.put("/project/tag/:projectId/:tagId", middlewares.authJwt.verifyToken, pr
 //Transaction
 router.post("/transaction", middlewares.authJwt.verifyToken, transactionController.create)
 
+//Proposal
+router.post("/proposal", middlewares.authJwt.verifyToken, daoController.create)
+router.get("/category", middlewares.authJwt.verifyToken, daoController.categories)
 
 //Chain
 router.post("/chain/create", middlewares.authJwt.verifyToken, chainController.create)

@@ -1,5 +1,5 @@
 const { ethers } = require("ethers");
-const { SUBADMIN, RES_STATUS_SUCCESS, PLATFORM_TYPE_STAKING_IDO, TX_TYPE_DEPOSIT, TX_TYPE_LOCK, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND } = require("../config");
+const { SUBADMIN, RES_STATUS_SUCCESS, PLATFORM_TYPE_STAKING_IDO, TX_TYPE_DEPOSIT, TX_TYPE_LOCK, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, USER_STATUS_PENDING, USER_STATUS_APPROVE } = require("../config");
 const { requestBotAPI } = require("../helpers");
 const db = require("../models");
 const { getRndInteger, getTier } = require("../service");
@@ -107,7 +107,7 @@ exports.getUnApprovedAdmins = (req, res) => {
 
       User.find({
         role: role?._id,
-        status: 0
+        status: {$ne: USER_STATUS_APPROVE}
       })
         .populate("projects")
         .exec((err, users) => {
@@ -122,8 +122,6 @@ exports.getUnApprovedAdmins = (req, res) => {
 
           return res.status(200).send({ status: RES_STATUS_SUCCESS, data: users });
         })
-
-
     })
 };
 

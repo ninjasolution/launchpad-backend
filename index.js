@@ -63,6 +63,7 @@ const Chain = db.chain;
 const Coin = db.coin;
 const Country = db.country;
 const Tier = db.tier;
+const Category = db.category;
 
 db.connection.on("open", () => {
   console.log("Successfully connect to MongoDB.");
@@ -177,6 +178,18 @@ function initial() {
           label: item.id
         });
         await tier.save();
+      })
+    }
+  });
+
+  Category.estimatedDocumentCount(async (err, count) => {
+    if (!err && count == 0) {
+
+      source.categories.forEach(async item => {
+        const category = new Category({
+          name: item.name,
+        });
+        await category.save();
       })
     }
   });

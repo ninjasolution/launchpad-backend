@@ -1,10 +1,14 @@
 const mongoose = require("mongoose");
+const { PROPOSAL_STATUS_PENDING } = require("../config");
 
 
 module.exports = (connection, autoIncrement) => {
 
   const ProposalSchema = new mongoose.Schema({
-    name: {
+    proposalId: {
+      type: String,
+    },
+    title: {
       type: String,
     },
     description: {
@@ -13,8 +17,28 @@ module.exports = (connection, autoIncrement) => {
     webUrl: {
       type: String,
     },
+    video: {
+      type: String,
+    },
+    category: {
+      type: Number,
+    },
+    logo: {
+      type: String,
+    },
+    email: {
+      type: String,
+    },
     images: {
       type: [],
+    },
+    status: {
+      type: Number,
+      default: PROPOSAL_STATUS_PENDING,
+    },
+    owner: {
+      type: "Number",
+      ref: "User"
     },
   });
   
