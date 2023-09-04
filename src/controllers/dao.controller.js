@@ -1,6 +1,7 @@
 const db = require("../models");
 const Category = db.category;
 const Proposal = db.proposal;
+const Comment = db.comment;
 const config = require("../config/index")
 
 exports.categories = (req, res) => {
@@ -73,3 +74,31 @@ exports.create = (req, res) => {
     });
   });
 }
+
+
+exports.dashboard = (req, res) => {
+
+  Comment.find({"proposal": req.params.proposalId})
+  .distinct("user")
+  .exec(async (err, users) => {
+    if (err) {
+      console.log(err)
+      return res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
+    }
+
+    if(!users) {
+      return res.status(404).send({ message: config.RES_MSG_DATA_NOT_FOUND, status: config.RES_STATUS_FAIL });
+    }
+
+    let dashboard = {
+      userCount: users.length
+    }
+
+    return res.status(200).send({
+      message: config.RES_MSG_DATA_FOUND,
+      data: dashboard,
+      status: config.RES_STATUS_SUCCESS,
+    });
+  });
+}
+

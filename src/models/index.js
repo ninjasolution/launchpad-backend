@@ -33,6 +33,7 @@ db.nonce = require("./nonce.model")(db.connection, autoIncrement);
 db.tag = require("./tag.model")(db.connection, autoIncrement);
 db.category = require("./category.model")(db.connection, autoIncrement);
 db.proposal = require("./proposal.model")(db.connection, autoIncrement);
+db.comment = require("./comment.model")(db.connection, autoIncrement);
 
 
 db.ROLES = [SUPERADMIN, SUBADMIN, USER]

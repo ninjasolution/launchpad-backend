@@ -1,31 +1,42 @@
 const db = require("../models");
-const Coin = db.coin;
+const Comment = db.comment;
 const config = require("../config/index")
 
 exports.list = (req, res) => {
-  Coin.find({ chain: req.query.chainId })
-    .exec((err, coins) => {
+
+  let options = {}
+
+  if (req.query.proposalId) {
+    options.proposal = req.query.proposalId
+  }
+  if (req.query.user) {
+    options.user = req.query.user
+  }
+
+  Comment.find(options)
+    .populate({ path: "user", select: "wallet image" })
+    .exec((err, comments) => {
 
       if (err) {
         res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
         return;
       }
 
-      if (!coins) {
+      if (!comments) {
         return res.status(404).send({ message: config.RES_MSG_DATA_NOT_FOUND });
       }
 
       return res.status(200).send({
         message: config.RES_MSG_DATA_FOUND,
-        data: coins,
+        data: comments,
         status: config.RES_STATUS_SUCCESS,
       });
     })
 };
 
 exports.update = (req, res) => {
-  Coin.updateOne({ _id: req.params.id }, { name: req.body.name })
-    .exec((err, coin) => {
+  Comment.updateOne({ _id: req.params.id }, { name: req.body.name })
+    .exec((err, Comment) => {
 
       if (err) {
         res.status(500).send({ message: err, status: config.RES_MSG_UPDATE_FAIL });
@@ -34,7 +45,7 @@ exports.update = (req, res) => {
 
       return res.status(200).send({
         message: config.RES_MSG_UPDATE_SUCCESS,
-        data: coin,
+        data: Comment,
         status: config.RES_STATUS_SUCCESS,
       });
     })
@@ -42,7 +53,7 @@ exports.update = (req, res) => {
 
 
 exports.delete = (req, res) => {
-  Coin.deleteOne({ _id: req.params.id })
+  Comment.deleteOne({ _id: req.params.id })
     .exec((err) => {
 
       if (err) {
@@ -59,11 +70,11 @@ exports.delete = (req, res) => {
 
 
 exports.create = (req, res) => {
-  const coin = new Coin({
+  const comment = new Comment({
     ...req.body,
     user: req.userId
   });
-  coin.save(async (err, coin) => {
+  comment.save(async (err, comment) => {
     if (err) {
       console.log(err)
       return res.status(400).send({ message: err, status: "errors" });
@@ -71,7 +82,7 @@ exports.create = (req, res) => {
 
     return res.status(200).send({
       message: config.RES_MSG_SAVE_SUCCESS,
-      data: coin,
+      data: comment,
       status: config.RES_STATUS_SUCCESS,
     });
   });

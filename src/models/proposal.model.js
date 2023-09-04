@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { PROPOSAL_STATUS_PENDING } = require("../config");
+const timestamps = require('mongoose-timestamp');
 
 
 module.exports = (connection, autoIncrement) => {
@@ -44,6 +45,7 @@ module.exports = (connection, autoIncrement) => {
   });
   
   ProposalSchema.plugin(autoIncrement.plugin, "Proposal")  
+  ProposalSchema.plugin(timestamps)  
 
   const Proposal = connection.model(
     "Proposal",
