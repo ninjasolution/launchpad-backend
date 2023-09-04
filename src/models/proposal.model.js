@@ -22,6 +22,7 @@ module.exports = (connection, autoIncrement) => {
     },
     category: {
       type: Number,
+      ref: "Category"
     },
     logo: {
       type: String,
@@ -37,7 +38,7 @@ module.exports = (connection, autoIncrement) => {
       default: PROPOSAL_STATUS_PENDING,
     },
     owner: {
-      type: "Number",
+      type: Number,
       ref: "User"
     },
   });

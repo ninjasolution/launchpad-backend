@@ -33,8 +33,8 @@ exports.list = (req, res) => {
   }
 
   Proposal.find(option)
-  .populate("category")
-  .populate("owner")
+  .populate({path: "category", select: "name"})
+  .populate({path: "owner", select: "wallet"})
   .exec(async (err, proposals) => {
     if (err) {
       console.log(err)
