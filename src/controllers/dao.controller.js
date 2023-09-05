@@ -29,16 +29,24 @@ exports.list = (req, res) => {
 
   let option = {}
 
-  if(req.query.status) {
-    option.status = req.query.status;
+  if(req.query.status == "active") {
+    option.status = {
+      $nin: [ config.PROPOSAL_STATUS_CANCELED, config.PROPOSAL_STATUS_DEFEATED, config.PROPOSAL_STATUS_EXECUTED ]
+    }
+  }
+
+  if(req.query.status == "completed") {
+    option.status = {
+      $nin: [ config.PROPOSAL_STATUS_SUCCEEDED, config.PROPOSAL_STATUS_DEFEATED ]
+    }
   }
 
   Proposal.find(option)
+  .limit(20)
   .populate({path: "category", select: "name"})
   .populate({path: "owner", select: "wallet"})
   .exec(async (err, proposals) => {
     if (err) {
-      console.log(err)
       return res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
     }
 
