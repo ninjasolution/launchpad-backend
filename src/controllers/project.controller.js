@@ -316,7 +316,7 @@ exports.setVisible = async (req, res) => {
 
 exports.updateTag = async (req, res) => {
 
-    Tag.findOne({ project: req.params.projectId, title: req.body.title })
+    Tag.findOne({ _id: req.params.tagId })
         .exec(async (err, tag) => {
             if (err) {
                 console.log(err)
