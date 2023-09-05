@@ -11,30 +11,38 @@ module.exports = (connection, autoIncrement) => {
     },
     price: {
       type: Number,
+      default: 0
     },
     maxCap: {
       type: Number,
+      default: 0
     },
     allocation: {
       type: Number,
+      default: 0
     },
     minAllocation: {
       type: Number,
+      default: 0
     },
     maxAllocation: {
-      type: Number
+      type: Number,
+      default: 0
     },
     minSwapLevel: {
-      type: Number
+      type: Number,
+      default: 0
     },
     maxParticipants: {
-      type: Number
+      type: Number,
+      default: 0
     },
     accessType: {
       type: String
     },
     open: {
-      type: Boolean
+      type: Boolean,
+      default: false
     },
     startAt: {
       type: Number

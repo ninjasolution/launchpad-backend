@@ -134,7 +134,7 @@ exports.getMyProjects = async (req, res) => {
         }
 
         Project
-            .find({ _id: {"$in": transactions.map(item => item._id)} })
+            .find({ _id: { "$in": transactions.map(item => item._id) } })
             .populate("paymentCoin")
             .populate("createdBy")
             .populate("chain")
@@ -144,11 +144,11 @@ exports.getMyProjects = async (req, res) => {
                 if (err) {
                     return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                 }
-    
+
                 if (!projects) {
                     return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
                 }
-    
+
                 return res.status(200).send({
                     message: RES_MSG_SUCESS,
                     data: projects,
@@ -161,14 +161,15 @@ exports.getMyProjects = async (req, res) => {
 
 exports.getProof = async (req, res) => {
 
-    let { projectId, userId, tagId } = req.params;
-    if (!(projectId && userId && tagId)) {
+    let { projectId } = req.params;
+    if (!(projectId )) {
         return res.status(200).send({ message: RES_STATUS_FAIL, data: {} });
     }
 
     Project.findOne({ _id: req.params.projectId })
         .populate("tags")
         .populate("curTag")
+        .populate("createdBy")
         .exec((err, project) => {
             if (err) {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
@@ -178,46 +179,36 @@ exports.getProof = async (req, res) => {
                 return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
             }
 
-            User.findOne({ _id: req.params.userId })
-                .exec((err, user) => {
+            WhiteList
+                .findOne({ project: req.params.projectId, address: project.createdBy.wallet })
+                .exec(async (err, whiteList) => {
+
                     if (err) {
                         return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                     }
-                    if (!user) {
-                        return res.status(404).send({ message: RES_MSG_DATA_NOT_FOUND, status: RES_STATUS_FAIL });
+
+                    if (!whiteList) {
+
+
+                        return res.status(404).send({
+                            message: RES_MSG_DATA_NOT_FOUND,
+                            status: RES_STATUS_FAIL,
+                        });
                     }
 
-                    WhiteList
-                        .findOne({ project: req.params.projectId, address: user.wallet })
-                        .exec(async (err, whiteList) => {
+                    let allocation = {
+                        tagId: project.curTag.title,
+                        account: project.createdBy.wallet,
+                        maxAllocation: service.customParse((project.token.totalSupply * whiteList.percent / 100), 4),
+                        refundFee: "40",
+                        igoTokenPerPaymentToken: project.curTag.price,
+                    }
 
-                            if (err) {
-                                return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                            }
-
-                            if (!whiteList) {
-
-
-                                return res.status(404).send({
-                                    message: RES_MSG_DATA_NOT_FOUND,
-                                    status: RES_STATUS_FAIL,
-                                });
-                            }
-
-                            let allocation = {
-                                tagId: project.curTag.title,
-                                account: user.wallet,
-                                maxAllocation: service.customParse((project.token.totalSupply * whiteList.percent / 100), 4),
-                                refundFee: "40",
-                                igoTokenPerPaymentToken: project.curTag.price,
-                            }
-
-                            return res.status(200).send({
-                                message: RES_MSG_SUCESS,
-                                data: { proof: whiteList.proof, allocation },
-                                status: RES_STATUS_SUCCESS,
-                            });
-                        })
+                    return res.status(200).send({
+                        message: RES_MSG_SUCESS,
+                        data: { proof: whiteList.proof, allocation },
+                        status: RES_STATUS_SUCCESS,
+                    });
                 })
         })
 
@@ -258,14 +249,17 @@ exports.update = async (req, res) => {
     try {
 
         let tagIds = [];
-        if(req.body.tags && req.body.tags.length) {
-            for(let i=0 ; i<req.body.tags.length ; i++) {
+        if (req.body.tags && req.body.tags.length) {
+            for (let i = 0; i < req.body.tags.length; i++) {
                 let tag = req.body.tags[i];
-    
-                if(tag._id) {
-                    await Tag.updateOne({_id: tag._id}, tag)
-                }else {
-                    let _newTag = new Tag(tag);
+
+                if (tag._id) {
+                    await Tag.updateOne({ _id: tag._id }, tag)
+                } else {
+                    let _newTag = new Tag({
+                        ...tag,
+                        project: req.body._id
+                    });
                     tag = await _newTag.save();
                 }
                 tagIds.push(tag._id);
@@ -276,21 +270,21 @@ exports.update = async (req, res) => {
             ...req.body,
             tags: tagIds
         }
-    
+
         Project.updateOne({ _id: req.body._id }, project)
             .exec((err, project) => {
                 if (err) {
                     console.log(err)
                     return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                 }
-    
+
                 return res.status(200).send({
                     message: RES_MSG_SUCESS,
                     data: project,
                     status: RES_STATUS_SUCCESS,
                 });
             })
-    }catch (err) {
+    } catch (err) {
 
     }
 
@@ -330,8 +324,13 @@ exports.updateTag = async (req, res) => {
             tag.open = req.body.open;
             await tag.save();
 
+
             Project.updateOne({ _id: req.params.projectId }, { curTag: tag._id })
                 .exec((err, project) => {
+
+                    if (err) {
+                        console.log(err)
+                    }
 
                     return res.status(200).send({
                         message: RES_MSG_SUCESS,
