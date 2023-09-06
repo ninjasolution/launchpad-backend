@@ -37,7 +37,7 @@ exports.list = (req, res) => {
 
   if(req.query.status == "completed") {
     option.status = {
-      $nin: [ config.PROPOSAL_STATUS_SUCCEEDED, config.PROPOSAL_STATUS_DEFEATED ]
+      $in: [ config.PROPOSAL_STATUS_SUCCEEDED, config.PROPOSAL_STATUS_DEFEATED ]
     }
   }
 
