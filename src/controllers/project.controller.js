@@ -399,8 +399,6 @@ exports.approve = async (req, res) => {
             project.visible = PROJECT_VISIBLE_NOT_STARTED;
             project = await project.save();
 
-            console.log(igo, vesting)
-
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
                 data: project,

@@ -9,7 +9,7 @@ module.exports = (connection, autoIncrement) => {
       type: String
     },
     nonce: {
-      type: Number
+      type: String
     }
   });
   NonceSchema.plugin(autoIncrement.plugin, "Nonce")

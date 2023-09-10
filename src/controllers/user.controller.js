@@ -136,7 +136,7 @@ exports.getUserNonce = (req, res) => {
 
       if (!nonce) {
 
-        let _nonce = getRndInteger(0, 10000)
+        let _nonce = getRndInteger(10000, 1000000000)
         let newNonce = new Nonce({ wallet: req.params.address, nonce: _nonce })
         await newNonce.save();
 
