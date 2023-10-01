@@ -83,6 +83,21 @@ exports.create = (req, res) => {
   });
 }
 
+exports.update = (req, res) => {
+  Proposal.updateOne({proposalId: req.params.proposalId}, {status: req.body.status}, (err, proposal) => {
+    if (err) {
+      console.log(err)
+      return res.status(400).send({ message: err, status: config.RES_STATUS_FAIL });
+    }
+
+    return res.status(200).send({
+      message: config.RES_MSG_SAVE_SUCCESS,
+      data: proposal,
+      status: config.RES_STATUS_SUCCESS,
+    });
+  });
+}
+
 
 exports.dashboard = (req, res) => {
 

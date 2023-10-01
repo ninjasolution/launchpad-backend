@@ -49,8 +49,8 @@ app.use(function (req, res, next) {
 });
 
 
-app.get("/", (req, res) => {
-  return res.send("Welcome to launchpad API");
+app.get("/api/check", (req, res) => {
+  return res.send("Welcome to launchpad API: updated 10/2");
 });
 app.use('/api', indexRouter);
 

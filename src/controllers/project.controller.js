@@ -3,12 +3,10 @@ const db = require("../models");
 const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, RES_MSG_FAIL, securityTokenAddr, chainId, PROJECT_STATUS_FILEHASH, PLATFORM_TYPE_INVEST_IGO } = require("../config");
 const Project = db.project;
 const WhiteList = db.whiteList;
-const User = db.user;
 const Transaction = db.transaction;
 const Tier = db.tier;
 const Tag = db.tag;
 const service = require("../service");
-const { tiers } = require("../config/static.source");
 
 exports.list = (req, res) => {
     var options = {

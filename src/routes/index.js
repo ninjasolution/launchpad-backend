@@ -77,6 +77,7 @@ router.post("/transaction", middlewares.authJwt.verifyToken, transactionControll
 
 //Proposal
 router.get("/proposal/list", daoController.list)
+router.put("/proposal/:proposalId", daoController.update)
 router.post("/proposal", middlewares.authJwt.verifyToken, daoController.create)
 router.get("/proposal/dashboard/:proposalId", daoController.dashboard)
 router.get("/category", middlewares.authJwt.verifyToken, daoController.categories)

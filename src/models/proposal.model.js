@@ -38,6 +38,9 @@ module.exports = (connection, autoIncrement) => {
       type: Number,
       default: PROPOSAL_STATUS_PENDING,
     },
+    hash: {
+      type: String,
+    },
     owner: {
       type: Number,
       ref: "User"
