@@ -31,13 +31,13 @@ exports.list = (req, res) => {
 
   if(req.query.status == "active") {
     option.status = {
-      $nin: [ config.PROPOSAL_STATUS_CANCELED, config.PROPOSAL_STATUS_DEFEATED, config.PROPOSAL_STATUS_EXECUTED, PROPOSAL_STATUS_SUCCEEDED ]
+      $nin: [ config.PROPOSAL_STATUS_CANCELED, config.PROPOSAL_STATUS_DEFEATED, config.PROPOSAL_STATUS_EXECUTED, config.PROPOSAL_STATUS_SUCCEEDED ]
     }
   }
 
   if(req.query.status == "completed") {
     option.status = {
-      $in: [ config.PROPOSAL_STATUS_SUCCEEDED, config.PROPOSAL_STATUS_DEFEATED ]
+      $in: [ config.PROPOSAL_STATUS_SUCCEEDED, config.PROPOSAL_STATUS_DEFEATED, config.PROPOSAL_STATUS_EXECUTED ]
     }
   }
 
