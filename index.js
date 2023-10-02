@@ -191,6 +191,7 @@ function initial() {
         });
         await category.save();
       })
+      console.log("category has been stored!")
     }
   });
 
