@@ -4,7 +4,7 @@
 # production
 /build
 
-# .env
+.env
 .git-2
 .env.local
 .env.development.local
