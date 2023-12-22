@@ -402,29 +402,18 @@ exports.approve = async (req, res) => {
                 tagIds.push(project.tags[i].title);
             }
 
-            let { igo, vesting } = await service.createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, tagIds, tags)
+            let savedProject = await service.createIGO(project, project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, tagIds, tags)
 
-            if (!igo) {
+            if (!savedProject.enable) {
                 return res.status(500).send({
                     message: RES_MSG_FAIL,
                     status: RES_STATUS_FAIL,
                 });
             }
-            project.vesting = {
-                ...project.vesting,
-                address: vesting
-            }
-            project.igo = {
-                ...project.igo,
-                address: igo
-            }
-            project.enable = true;
-            project.visible = PROJECT_VISIBLE_NOT_STARTED;
-            project = await project.save();
 
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
-                data: project,
+                data: savedProject,
                 status: RES_STATUS_SUCCESS,
             });
         })
