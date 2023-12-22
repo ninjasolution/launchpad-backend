@@ -359,25 +359,50 @@ exports.approve = async (req, res) => {
             }, 0)
 
             let igoSetUp = {
-                igoVesting: project.paymentCoin.address,
-                paymentToken: project.paymentCoin.address,
-                grandTotal: service.customParse((10 * summedMaxTagCap).toString()),
-                summedMaxTagCap: service.customParse((summedMaxTagCap * 2).toString())
+                "vestingContract": project.paymentCoin.address,
+                "paymentToken": project.paymentCoin.address,
+                "grandTotal": service.customParse((summedMaxTagCap).toString()),
+                "summedMaxTagCap": service.customParse((summedMaxTagCap * 2).toString()),
+                "refundFeeDecimals": 2
             };
 
             let contractSetup = {
-                igoToken: project.token.address,
-                totalTokenOnSale: ethers.utils.parseEther(project.vesting.amountTotal?.toString()),
-                decimals: project.token.decimals
+                "paymentReceiver": project.createdBy.wallet,
+                "admin": project.createdBy.wallet,
+                "vestedToken": project.token.address,
+                "platformFee": 10,
+                "totalTokenOnSale": ethers.utils.parseEther(project.vesting.amountTotal?.toString()),
+                "gracePeriod": 60,
+                "decimals": project.token.decimals
             };
 
             let vestingSetup = {
-                startTime: project.vesting.startAt,
-                cliff: project.vesting.cliff * 3600 * 24,
-                duration: project.vesting.duration * 3600 * 24,
-                initialUnlockPercent: project.vesting.initialUnlockPercent
+                "startTime": project.vesting.startAt,
+                "cliff": project.vesting.cliff * 3600 * 24,
+                "duration": project.vesting.duration * 3600 * 24,
+                "initialUnlockPercent": project.vesting.initialUnlockPercent
             };
-            let { igo, vesting } = await service.createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, project.tags)
+
+            let tags = []
+            let tagIds = []
+
+            for (let i = 0; i < project.tags.length; i++) {
+
+                tags.push({
+                    "status": "0",
+                    "merkleRoot": ethers.utils.formatBytes32String("merkleroot"),
+                    "startAt": project.tags[i].startAt,
+                    "endAt": project.tags[i].endAt,
+                    "maxTagCap": service.customParse(project.tags[i].maxCap.toString()),
+                    "minAllocation": service.customParse(project.tags[i].minAllocation.toString()),
+                    "maxAllocation": service.customParse(project.tags[i].maxAllocation.toString()),
+                    "allocation": ethers.utils.parseEther(project.tags[i].allocation.toString()),
+                    "maxParticipants": project.tags[i].maxParticipants
+                });
+                tagIds.push(project.tags[i].title);
+            }
+
+            let { igo, vesting } = await service.createIGO(project.projectName, project.createdBy.wallet, igoSetUp, contractSetup, vestingSetup, tagIds, tags)
 
             if (!igo) {
                 return res.status(500).send({

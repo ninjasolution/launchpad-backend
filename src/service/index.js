@@ -1,14 +1,19 @@
-const { RPC, securityTokenAddr, igoFactoryAddr, igoDeployerAddr } = require("../config");
+const { RPC, igoFactoryAddr, igoDeployerAddr, stakingAddr, farmingAddr, TX_TYPE_LOCK, PLATFORM_TYPE_STAKING_IDO, PAYMENT_METHOD_CRYPTO, TX_STATUS_SUCCESS, chainId, PROJECT_VISIBLE_OPENED, PLATFORM_TYPE_FARMING_IDO, securityTokenAddr, utilityTokenAddr } = require("../config");
 const ERC20 = require("../abis/ERC20.json")
 const IGOFactory = require("../abis/IGOFactory.json")
 const IGODeployer = require("../abis/IGODeployer.json")
 const FundingToken = require("../abis/FundingToken.json")
 const IGO = require("../abis/IGO.json")
 const IGOVesting = require("../abis/IGOVesting.json")
+const Staking = require("../abis/Staking.json")
+const Farming = require("../abis/YieldFarming.json")
 const { ethers } = require("ethers");
 const { MerkleTree } = require("merkletreejs");
-const db = require("../models");
 const { tiers } = require("../config/static.source");
+const db = require("../models");
+const Transaction = db.transaction;
+const Project = db.project;
+const User = db.user;
 
 require('dotenv').config();
 
@@ -19,79 +24,243 @@ class Service {
         this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider)
         this.igoFactoryContract = new ethers.Contract(igoFactoryAddr, IGOFactory.abi, this.wallet)
         this.igoDeployerContract = new ethers.Contract(igoDeployerAddr, IGODeployer.abi, this.wallet)
+        this.farmingContract = new ethers.Contract(farmingAddr, Farming.abi, this.wallet)
+
+        this.detectStakingEvent(stakingAddr)
+        Project.find({ visible: PROJECT_VISIBLE_OPENED }, (err, projects) => {
+            if (!err) {
+                projects.forEach(item => {
+                    if (item?.staking?.address) {
+                        console.log(item?.staking?.address)
+                        // this.detectStakingEvent(item?.staking?.address)
+                    }
+                })
+            }
+        })
+
     }
 
-    async test() {
-        let res = await this.igoFactoryContract.getIgosDetails(0, 4);
-        console.log(res)
+    async detectStakingEvent(address) {
+        this.stakingContract = new ethers.Contract(address, Staking.abi, this.wallet)
+        this.stakingContract.on("Staked", async (...events) => {
+
+            try {
+
+                let project = await Project.findOne({ "staking.address": address });
+                let projectId = 0;
+                let decimals = 10000;
+                if (project) {
+                    projectId = project?._id;
+                    decimals = project?.token?.decimals
+                }
+
+                let args = events[4].args;
+                let user = await User.findOne({ "wallet": args?.staker });
+                const transaction = new Transaction({
+                    type: TX_TYPE_LOCK,
+                    platform: PLATFORM_TYPE_STAKING_IDO,
+                    project: projectId,
+                    amount: args?.stakedAmount.toString() / decimals,
+                    coin: args?.token,
+                    paymentMethod: PAYMENT_METHOD_CRYPTO,
+                    chainId: chainId,
+                    status: TX_STATUS_SUCCESS,
+                    duration: args?.duration,
+                    hash: events[4].blockHash,
+                    user: user?._id,
+                })
+                await transaction.save();
+
+                let transactions = await Transaction
+                    .aggregate([{
+                        $match: { "user": user?._id, platform: PLATFORM_TYPE_STAKING_IDO, type: TX_TYPE_LOCK }
+                    },
+                    {
+                        $group: { _id: "$duration", amount: { $sum: '$amount' } }
+                    }
+                    ]).exec()
+
+                let tier = this.getTier(transactions.map(item => ({ duration: item._id, amount: item.amount })))
+                let investment = 0;
+                transactions.forEach(item => {
+                    investment += item.amount;
+                })
+
+                await User.updateOne({ _id: user?._id }, { tier })
+                console.log(events[4].blockHash)
+            } catch (err) {
+                console.log(err)
+            }
+
+
+        });
+
     }
 
-    async createIGO(name, owner, _igoSetup, _contractSetup, _vestingSetup, _tags) {
+
+
+    async createIGOTest() {
         try {
 
+            const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
+            const igo = await IGOContract.deploy(this.wallet.address)
+            console.log("IGO deployed to:", igo.address);
+
+            const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
+            const vesting = await VestingContract.deploy("IGO Vesting")
+            console.log("IGOVesting deployed to:", vesting.address);
+
+            let blockTimestamp = (await this.provider.getBlock("latest")).timestamp;
+            blockTimestamp = Number.parseInt(blockTimestamp)
+            
             let igoSetUp = {
-                "vestingContract": _igoSetup.paymentToken,
-                "paymentToken": _igoSetup.paymentToken,
-                "grandTotal": _igoSetup.grandTotal,
-                "summedMaxTagCap": _igoSetup.summedMaxTagCap,
-                "refundFeeDecimals": "2"
+                "vestingContract": vesting.address,
+                "paymentToken": securityTokenAddr,
+                "grandTotal": "1000000000",
+                "summedMaxTagCap": "10000000000",
+                "refundFeeDecimals": 2
             };
 
             let contractSetup = {
-                "paymentReceiver": owner,
-                "admin": owner,
-                "vestedToken": _contractSetup.igoToken,
-                "platformFee": "10",
-                "totalTokenOnSale": _contractSetup.totalTokenOnSale,
-                "gracePeriod": "60",
-                "decimals": _contractSetup.decimals
+                "paymentReceiver": this.wallet.address,
+                "admin": this.wallet.address,
+                "vestedToken": utilityTokenAddr,
+                "platformFee": 10,
+                "totalTokenOnSale": "10000000",
+                "gracePeriod": 60,
+                "decimals": 18
             };
 
             let vestingSetup = {
-                "startTime": _vestingSetup.startTime,
-                "cliff": _vestingSetup.cliff,
-                "duration": _vestingSetup.duration,
-                "initialUnlockPercent": _vestingSetup.initialUnlockPercent
+                "startTime": blockTimestamp + 3600,
+                "cliff": "432000",
+                "duration": "4320000",
+                "initialUnlockPercent": 10
             };
 
             let tags = []
-            let tagIds = []
+            let tagIds = ["Private"]
 
-            for (let i = 0; i < _tags.length; i++) {
+            for (let i = 0; i < tagIds.length; i++) {
 
                 tags.push({
                     "status": "0",
-                    "merkleRoot": ethers.utils.formatBytes32String("merkleroot"),
-                    "startAt": _tags[i].startAt,
-                    "endAt": _tags[i].endAt,
-                    "maxTagCap": this.customParse(_tags[i].maxCap.toString()),
-                    "minAllocation": this.customParse(_tags[i].minAllocation.toString()),
-                    "maxAllocation": this.customParse(_tags[i].maxAllocation.toString()),
-                    "allocation": ethers.utils.parseEther(_tags[i].allocation.toString()),
-                    "maxParticipants": _tags[i].maxParticipants
+                    "merkleRoot": ethers.utils.formatBytes32String("he"),
+                    "startAt": blockTimestamp + 3600,
+                    "endAt": blockTimestamp + 103600,
+                    "maxTagCap": this.customParse("10"),
+                    "minAllocation": this.customParse("10"),
+                    "maxAllocation": this.customParse("100"),
+                    "allocation": ethers.utils.parseEther("100"),
+                    "maxParticipants": 12
                 });
-                tagIds.push(_tags[i].title);
             }
 
             let igoArgs = [
-                name,
+                "AAE3eAA",
                 igoSetUp,
                 tagIds,
                 tags,
                 contractSetup,
                 vestingSetup
             ]
+            let gasPrice = (await this.provider.getFeeData()).gasPrice.toString() * 2;
+            gasPrice = gasPrice.toString() * 2;
 
-            let igoTx = await this.igoFactoryContract.createIGO(...igoArgs);
+            await igo.initialize(this.wallet.address, igoSetUp, [], [], { gasPrice, gasLimit: 15000000 });
+            await vesting.initializeCrowdfunding(
+              contractSetup,
+              vestingSetup, 
+              { gasPrice, gasLimit: 15000000 }
+            );
+            await vesting.transferOwnership(igo.address, { gasPrice, gasLimit: 15000000 });
+            console.log("is setup")
+            await igo.updateGrandTotal("10000000000", { gasPrice, gasLimit: 15000000 });
+            console.log("is updated grand total")
+            await igo.updateSetTags(tagIds, tags, { gasPrice, gasLimit: 15000000 });
+            console.log("is updated tags")
+            await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), contractSetup.admin, { gasPrice, gasLimit: 15000000 });
+            console.log(await igo.setUp())
 
-            const igoReceipt = await igoTx.wait();
+            
+            // let igoTx = await this.igoFactoryContract.createIGO(...igoArgs, { gasLimit: 15000000 });
+            // const igoReceipt = await igoTx.wait();
+            // console.log(igoReceipt)            
+            // const event = igoReceipt.events[igoReceipt.events.length - 1];
+            // let igoAddr = event.args[1];
+            // let vestingAddr = "0x3F5E0718BC5a07B4aEf107f6BDc865f6F2E6C565";
+            // // let igoAddr = "0x2073e2aA7bEe41FCA9394D1e3bF66ce62B380ac4";
+            // let igoContract = new ethers.Contract(igoAddr, IGO.abi, this.wallet)
 
-            const event = igoReceipt.events[6];
+            // console.log("started", await igoContract.setUp(), await igoContract.tagIds())
+            // await igoContract.updateGrandTotal("100000000", { gasLimit: 15000000 });
+            // console.log("updated Grand Total")
+            // await igoContract.updateSetTags(tagIds, tags, { gasLimit: 15000000 });
+            // console.log(await igoContract.tagIds())
+            console.log("Ready")            
 
             return {
-                igo: event.args[1],
-                vesting: event.args[2]
+                igo: igo.address,
+                // vesting: event.args[2]
             }
+        } catch (err) {
+            console.log(err)
+           
+        }
+
+    }
+
+    async createIGO(name, owner, _igoSetup, _contractSetup, _vestingSetup, _tagIds, _tags) {
+        try {
+
+            const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
+            const igo = await IGOContract.deploy(this.wallet.address)
+            console.log("IGO deployed to:", igo.address);
+
+            const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
+            const vesting = await VestingContract.deploy(name)
+            console.log("IGOVesting deployed to:", vesting.address);
+
+            let igoSetUp = {
+                ..._igoSetup,
+                "vestingContract": vesting.address,
+            };
+       
+            let gasPrice = (await this.provider.getFeeData()).gasPrice.toString() * 2;
+            gasPrice = gasPrice.toString() * 2;
+
+            await igo.initialize(this.wallet.address, igoSetUp, [], [], { gasPrice, gasLimit: 15000000 });
+            await vesting.initializeCrowdfunding(
+              _contractSetup,
+              _vestingSetup, 
+              { gasPrice, gasLimit: 15000000 }
+            );
+            await vesting.transferOwnership(igo.address, { gasPrice, gasLimit: 15000000 });
+            console.log("is setup")
+            await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: 15000000 });
+            console.log("is updated tags")
+            await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin, { gasPrice, gasLimit: 15000000 });
+            console.log(await igo.setUp())
+
+            return {
+                igo: igo.address,
+                vesting: vesting.address
+            }
+
+            // let igoTx = await this.igoFactoryContract.createIGO(...igoArgs, { gasPrice: 20000000000 });
+            // const igoReceipt = await igoTx.wait();
+            // const event = igoReceipt.events[6];
+            // let igoAddr = event.args[1];
+            // let vestingAddr = event.args[2];
+            // let igoContract = new ethers.Contract(igoAddr, IGO.abi, this.wallet)
+            // await igoContract.updateGrandTotal(_igoSetup.grandTotal, { gasPrice });
+            // await igoContract.updateSetTags(tagIds, tags, { gasPrice });
+            // console.log("Ready")            
+
+            // return {
+            //     igo: igoAddr,
+            //     vesting: event.args[2]
+            // }
         } catch (err) {
             console.log(err)
             return {
@@ -178,12 +347,12 @@ class Service {
             }
         }
 
-        let tier = {};  
-        for(let i=tiers.length-1 ; i>=0 ; i--) {
-          if(tiers[i].weight <= weight) {
-            tier = tiers[i];
-            break;
-          }
+        let tier = {};
+        for (let i = tiers.length - 1; i >= 0; i--) {
+            if (tiers[i].weight <= weight) {
+                tier = tiers[i];
+                break;
+            }
         }
 
         return tier;
