@@ -11,7 +11,7 @@ module.exports = {
     igoFactoryAddr: "0x8D1072d996B3E577C4875B147Df498aDe5695430",
     igoDeployerAddr: "0xc0C11Ef0155A7733a5E22cc4340eCEfE73f13738",
     stakingAddr: "0x6f265390e1a8a50993fC63c349F4454d0740df36",
-    farmingAddr: "0x246Bf9832ec5184A1A0c8dab6F580BABD2B6eC34",
+    farmingAddr: "0xf72f20835584A248551344e3f927AE4514DE9025",
     securityCode: "launchpad",
     SUPERADMIN: "SUPERADMIN",
     SUBADMIN: "SUBADMIN",
