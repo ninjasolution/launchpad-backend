@@ -160,7 +160,7 @@ exports.getMyProjects = async (req, res) => {
 exports.getProof = async (req, res) => {
 
     let { projectId } = req.params;
-    if (!(projectId )) {
+    if (!(projectId)) {
         return res.status(200).send({ message: RES_STATUS_FAIL, data: {} });
     }
 

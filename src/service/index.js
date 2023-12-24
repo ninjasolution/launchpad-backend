@@ -1,4 +1,4 @@
-const { RPC, igoFactoryAddr, igoDeployerAddr, stakingAddr, farmingAddr, TX_TYPE_LOCK, PLATFORM_TYPE_STAKING_IDO, PAYMENT_METHOD_CRYPTO, TX_STATUS_SUCCESS, chainId, PROJECT_VISIBLE_OPENED, PLATFORM_TYPE_FARMING_IDO, securityTokenAddr, utilityTokenAddr, PROJECT_STATUS_COMPLETED, PROJECT_STATUS_IGO_DEPLOYED, PROJECT_STATUS_VESTING_DEPLOYED, PROJECT_STATUS_IGO_INITIALIZED, PROJECT_STATUS_VESTING_INITIALIZED, PROJECT_STATUS_VESTING_OWNERSHIP, PROJECT_STATUS_PENDING, PROJECT_STATUS_IGO_UPDATE_TAGS, PROJECT_STATUS_IGO_GRANT_ROLE } = require("../config");
+const { RPC, igoFactoryAddr, igoDeployerAddr, stakingAddr, farmingAddr, TX_TYPE_LOCK, PLATFORM_TYPE_STAKING_IDO, PAYMENT_METHOD_CRYPTO, TX_STATUS_SUCCESS, chainId, PROJECT_VISIBLE_OPENED, PLATFORM_TYPE_FARMING_IDO, securityTokenAddr, utilityTokenAddr, PROJECT_STATUS_COMPLETED, PROJECT_STATUS_IGO_DEPLOYED, PROJECT_STATUS_VESTING_DEPLOYED, PROJECT_STATUS_IGO_INITIALIZED, PROJECT_STATUS_VESTING_INITIALIZED, PROJECT_STATUS_VESTING_OWNERSHIP, PROJECT_STATUS_PENDING, PROJECT_STATUS_IGO_UPDATE_TAGS, PROJECT_STATUS_IGO_GRANT_ROLE, PROJECT_STATUS_UPLOAD, PROJECT_VISIBLE_NOT_STARTED } = require("../config");
 const ERC20 = require("../abis/ERC20.json")
 const IGOFactory = require("../abis/IGOFactory.json")
 const IGODeployer = require("../abis/IGODeployer.json")
@@ -216,100 +216,152 @@ class Service {
             var igo, vesting;
             let gasPrice = (await this.provider.getFeeData()).gasPrice.toString() * 2;
             gasPrice = gasPrice.toString() * 2;
-            
-            const deployIGO = async () => {
-                const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
-                igo = await IGOContract.deploy(this.wallet.address)
-                console.log("IGO deployed to:", igo.address);
-                project.igo = {
-                    ...project.igo,
-                    address: igo.address
-                }
-                project.status = PROJECT_STATUS_IGO_DEPLOYED
 
-                return deployVesting()
+            const deployIGO = async () => {
+                try {
+                    const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
+                    igo = await IGOContract.deploy(this.wallet.address)
+                    console.log("IGO deployed to:", igo.address);
+                    project.igo = {
+                        ...project.igo,
+                        address: igo.address
+                    }
+                    project.status = PROJECT_STATUS_IGO_DEPLOYED
+
+                    return deployVesting()
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
             const deployVesting = async () => {
-                const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
-                vesting = await VestingContract.deploy(name)
-                console.log("IGOVesting deployed to:", vesting.address);
-                project.vesting = {
-                    ...project.vesting,
-                    address: vesting.address
-                }
-                project.status = PROJECT_STATUS_VESTING_DEPLOYED
+                try {
+                    const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
+                    vesting = await VestingContract.deploy(name)
+                    console.log("IGOVesting deployed to:", vesting.address);
+                    project.vesting = {
+                        ...project.vesting,
+                        address: vesting.address
+                    }
+                    project.status = PROJECT_STATUS_VESTING_DEPLOYED
 
-                return igoInitialize();
+                    return igoInitialize();
+
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
             const igoInitialize = async () => {
 
-                let igoSetUp = {
-                    ..._igoSetup,
-                    "vestingContract": vesting.address,
-                };
+                try {
 
-                await igo.initialize(this.wallet.address, igoSetUp, [], [], { gasPrice, gasLimit: 15000000 });
-                project.status = PROJECT_STATUS_IGO_INITIALIZED
+                    let igoSetUp = {
+                        ..._igoSetup,
+                        "vestingContract": vesting.address,
+                    };
 
-                return vestingInitialize()
+                    await igo.initialize(this.wallet.address, igoSetUp, [], [], { gasPrice, gasLimit: 15000000 });
+                    project.status = PROJECT_STATUS_IGO_INITIALIZED
+
+                    return vestingInitialize()
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
             const vestingInitialize = async () => {
-                await vesting.initializeCrowdfunding(
-                    _contractSetup,
-                    _vestingSetup,
-                    { gasPrice, gasLimit: 15000000 }
-                );
-                project.status = PROJECT_STATUS_VESTING_INITIALIZED
-                return vestingOwnership()
+
+                try {
+                    await vesting.initializeCrowdfunding(
+                        _contractSetup,
+                        _vestingSetup,
+                        { gasPrice, gasLimit: 15000000 }
+                    );
+                    project.status = PROJECT_STATUS_VESTING_INITIALIZED
+                    return vestingOwnership()
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
             const vestingOwnership = async () => {
 
-                await vesting.transferOwnership(igo.address, { gasPrice, gasLimit: 15000000 });
-                project.status = PROJECT_STATUS_VESTING_OWNERSHIP
-                console.log("is setup")
+                try {
 
-                return igoSetTags()
+                    await vesting.transferOwnership(igo.address, { gasPrice, gasLimit: 15000000 });
+                    project.status = PROJECT_STATUS_VESTING_OWNERSHIP
+                    console.log("is setup")
+
+                    return igoSetTags()
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
             const igoSetTags = async () => {
 
-                await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: 15000000 });
-                project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
-                console.log("is updated tags")
+                try {
+                    await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: 15000000 });
+                    project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
+                    console.log("is updated tags")
 
-                return igoGrantRole();
+                    return igoGrantRole();
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
             const igoGrantRole = async () => {
 
-                await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin, { gasPrice, gasLimit: 15000000 });
-                project.status = PROJECT_STATUS_IGO_GRANT_ROLE
-                console.log(await igo.setUp())
-                project.enable = true;
-                project.visible = PROJECT_VISIBLE_NOT_STARTED;
-                return await project.save();
+                try {
+                    await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin, { gasPrice, gasLimit: 15000000 });
+                    project.status = PROJECT_STATUS_IGO_GRANT_ROLE
+                    console.log(await igo.setUp())
+                    project.enable = true;
+                    project.visible = PROJECT_VISIBLE_NOT_STARTED;
+                    return await project.save();
+                } catch (err) {
+                    console.log(err)
+                    return await project.save();
+                }
             }
 
-            switch (status) {
-                case [PROJECT_STATUS_PENDING]:
+            if (project.status !== PROJECT_STATUS_UPLOAD && project.status == PROJECT_STATUS_IGO_DEPLOYED) {
+                const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
+                igo = await IGOContract.attach(project.igo.address)
+            } else if (project.status !== PROJECT_STATUS_UPLOAD) {
+                const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
+                igo = await IGOContract.attach(project.igo.address)
+
+                const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
+                vesting = await VestingContract.attach(project.vesting.address)
+            }
+
+            switch (project.status) {
+                case PROJECT_STATUS_UPLOAD:
+                    console.log(PROJECT_STATUS_UPLOAD)
                     return deployIGO();
-                case [PROJECT_STATUS_IGO_DEPLOYED]:
+                case PROJECT_STATUS_IGO_DEPLOYED:
+                    console.log(PROJECT_STATUS_IGO_DEPLOYED)
                     return deployVesting();
-                case [PROJECT_STATUS_VESTING_DEPLOYED]:
+                case PROJECT_STATUS_VESTING_DEPLOYED:
                     return igoInitialize();
-                case [PROJECT_STATUS_IGO_INITIALIZED]:
+                case PROJECT_STATUS_IGO_INITIALIZED:
                     return vestingInitialize();
-                case [PROJECT_STATUS_VESTING_INITIALIZED]:
+                case PROJECT_STATUS_VESTING_INITIALIZED:
                     return vestingOwnership();
-                case [PROJECT_STATUS_VESTING_OWNERSHIP]:
+                case PROJECT_STATUS_VESTING_OWNERSHIP:
                     return igoSetTags();
-                case [PROJECT_STATUS_IGO_UPDATE_TAGS]:
+                case PROJECT_STATUS_IGO_UPDATE_TAGS:
                     return igoGrantRole();
-                case [PROJECT_STATUS_IGO_GRANT_ROLE]:
+                case PROJECT_STATUS_IGO_GRANT_ROLE:
                     return project;
                 default:
                     return project;
@@ -338,8 +390,7 @@ class Service {
 
     async getRootHash(address) {
         let igoContract = new ethers.Contract(address, FundingToken.abi, this.wallet)
-        let hash = await igoContract.rootHash();
-        console.log(hash)
+        return await igoContract.rootHash();
 
     }
 

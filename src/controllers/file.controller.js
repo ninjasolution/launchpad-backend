@@ -5,14 +5,11 @@ const uuid = require('uuid');
 const db = require("../models");
 const csv = require("csv-parser");
 const { RES_STATUS_FAIL, RES_STATUS_SUCCESS, PROJECT_STATUS_FILEHASH, PROJECT_STATUS_SNAPSHOT, RES_MSG_SAVE_SUCCESS, RES_MSG_SAVE_FAIL, PERCENT_DIVISOR, PROJECT_STATUS_WHITELIST } = require('../config');
-const { tiers } = require('../config/static.source');
 const { generateAllocLeaves, generateMerkleRootAndProof } = require('../service');
-const { ethers } = require('ethers');
 const service = require('../service');
 const User = db.user;
 const Project = db.project;
 const WhiteList = db.whiteList;
-const Transaction = db.transaction;
 
 const storage = multer.diskStorage({
 

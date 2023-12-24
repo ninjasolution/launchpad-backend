@@ -1,5 +1,5 @@
 module.exports = { 
-    RPC: "https://api.avax-test.network/ext/bc/C/rpc",
+    RPC: "https://eth-sepolia.g.alchemy.com/v2/-hba0sbFIuYmoTG2WmZDby52IY90I5pb",
     chainId: "5",
     // RPC: "https://avalanche-fuji.infura.io/v3/35bdaa33a8834ed4adbcb0cf06f15f26",
     // securityTokenAddr: "0x420A4cDdD87583bA78d4884c21A2b7eCC7C3087d",
