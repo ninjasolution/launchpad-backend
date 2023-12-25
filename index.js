@@ -2,12 +2,11 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const bcrypt = require("bcryptjs");
-const service = require("./src/service")
 const cors = require("cors");
 var logger = require('morgan');
 var path = require('path');
 const bodyParser = require("body-parser");
-const { securityCode, SUBADMIN, SUPERADMIN } = require("./src/config")
+const { securityCode, SUPERADMIN } = require("./src/config")
 
 require('dotenv').config();
 
