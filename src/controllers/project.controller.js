@@ -178,7 +178,7 @@ exports.getProof = async (req, res) => {
             }
 
             WhiteList
-                .findOne({ project: req.params.projectId, address: project.createdBy.wallet })
+                .findOne({ project: req.params.projectId, address: req.wallet })
                 .exec(async (err, whiteList) => {
 
                     if (err) {
@@ -196,7 +196,7 @@ exports.getProof = async (req, res) => {
 
                     let allocation = {
                         tagId: project.curTag.title,
-                        account: project.createdBy.wallet,
+                        account: req.wallet,
                         maxAllocation: service.customParse((project.token.totalSupply * whiteList.percent / 100), 4),
                         refundFee: "40",
                         igoTokenPerPaymentToken: project.curTag.price,
