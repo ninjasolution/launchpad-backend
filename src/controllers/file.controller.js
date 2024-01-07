@@ -14,11 +14,9 @@ const WhiteList = db.whiteList;
 const storage = multer.diskStorage({
 
     destination: (req, file, cb) => {
-        console.log(file)
         cb(null, './files');
     },
     filename: (req, file, cb) => {
-        console.log(file)
         cb(null, file.originalname);
     }
 });
