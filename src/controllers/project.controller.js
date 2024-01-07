@@ -1,6 +1,6 @@
 const { ethers } = require("ethers");
 const db = require("../models");
-const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_PROGRESS, PROJECT_STATUS_LOTTERY, PERCENT_DIVISOR, PROJECT_VISIBLE_NOT_STARTED, TAG_TYPE_PUBLIC, RES_MSG_FAIL, securityTokenAddr, chainId, PROJECT_STATUS_FILEHASH, PLATFORM_TYPE_INVEST_IGO } = require("../config");
+const { PROJECT_STATUS_UPLOAD, RES_STATUS_SUCCESS, RES_MSG_SUCESS, RES_STATUS_FAIL, RES_MSG_DATA_NOT_FOUND, PROJECT_STATUS_LOTTERY, RES_MSG_FAIL, PROJECT_STATUS_FILEHASH, PLATFORM_TYPE_INVEST_IGO, PROJECT_STATUS_PENDING } = require("../config");
 const Project = db.project;
 const WhiteList = db.whiteList;
 const Transaction = db.transaction;
@@ -45,7 +45,7 @@ exports.list = (req, res) => {
 exports.create = async (req, res) => {
 
     const _project = req.body;
-    _project.status = PROJECT_STATUS_UPLOAD
+    _project.status = PROJECT_STATUS_PENDING
 
     let tagCount = req.body.tags.length;
     let tags = [];

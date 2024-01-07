@@ -4,9 +4,10 @@ const multer = require('multer');
 const uuid = require('uuid');
 const db = require("../models");
 const csv = require("csv-parser");
-const { RES_STATUS_FAIL, RES_STATUS_SUCCESS, PROJECT_STATUS_FILEHASH, PROJECT_STATUS_SNAPSHOT, RES_MSG_SAVE_SUCCESS, RES_MSG_SAVE_FAIL, PERCENT_DIVISOR, PROJECT_STATUS_WHITELIST } = require('../config');
+const { RES_STATUS_FAIL, RES_STATUS_SUCCESS, RES_MSG_SAVE_SUCCESS, PROJECT_STATUS_WHITELIST } = require('../config');
 const { generateAllocLeaves, generateMerkleRootAndProof } = require('../service');
 const service = require('../service');
+const { ethers } = require('ethers');
 const User = db.user;
 const Project = db.project;
 const WhiteList = db.whiteList;
@@ -71,15 +72,16 @@ exports.csvUploader = (req, res) => {
                             .pipe(csv())
                             .on('data', async (row) => {
 
-                                whiteLists.push({
-                                    address: row.address,
-                                    percent: row.percent,
-                                    project: project._id
-                                })
+                                if(ethers.utils.isAddress(row.address)) {
+                                    whiteLists.push({
+                                        address: row.address,
+                                        percent: row.percent,
+                                        project: project._id
+                                    })
+                                }
                             })
                             .on('end', () => {
                                 console.log('CSV file successfully processed');
-
                                 User.find({ wallet: { $nin: whiteLists.map(item => item.address) } })
                                     .exec(async (err, users) => {
 
@@ -87,42 +89,48 @@ exports.csvUploader = (req, res) => {
                                             return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                                         }
 
-                                        if (users) {
+                                        try {
 
-                                            for (let i = 0; i < users.length; i++) {
-                                                if (users[i].tier) {
-                                                    whiteLists.push({ address: users[i].address, percent: user.tier.percent, project: project._id })
+                                            if (users) {
+    
+                                                for (let i = 0; i < users.length; i++) {
+                                                    if (users[i].tier && ethers.utils.isAddress(users[i].address)) {
+                                                        whiteLists.push({ address: users[i].address, percent: user.tier.percent, project: project._id })
+                                                    }
                                                 }
+    
+                                                let allocations = whiteLists.map(item => ({
+                                                    tagId: project.curTag.title,
+                                                    account: item.address,
+                                                    maxAllocation: service.customParse((project.token.totalSupply * item.percent / 100), 4),
+                                                    refundFee: "40",
+                                                    igoTokenPerPaymentToken: project.curTag.price,
+                                                }));
+    
+                                                let leaves = generateAllocLeaves(allocations)
+                                                let { root, proofs } = generateMerkleRootAndProof(leaves);
+    
+                                                let newList = [];
+                                                let count = whiteLists.length;
+                                                for (let i = 0; i < count; i++) {
+                                                    newList.push({
+                                                        ...whiteLists[i],
+                                                        proof: proofs[i]
+                                                    })
+                                                }
+    
+                                                await WhiteList.insertMany(newList);
+                                                project.rootHash = root;
+                                                await project.save();
+    
+                                                return res.status(200).send({ status: RES_STATUS_SUCCESS, data: RES_MSG_SAVE_SUCCESS });
+                                            } else {
+                                                return res.status(4004).send({ status: RES_STATUS_FAIL, data: RES_MSG_SAVE_SUCCESS });
                                             }
-
-                                            let allocations = whiteLists.map(item => ({
-                                                tagId: project.curTag.title,
-                                                account: item.address,
-                                                maxAllocation: service.customParse((project.token.totalSupply * item.percent / 100), 4),
-                                                refundFee: "40",
-                                                igoTokenPerPaymentToken: project.curTag.price,
-                                            }));
-
-                                            let leaves = generateAllocLeaves(allocations)
-                                            let { root, proofs } = generateMerkleRootAndProof(leaves);
-
-                                            let newList = [];
-                                            let count = whiteLists.length;
-                                            for (let i = 0; i < count; i++) {
-                                                newList.push({
-                                                    ...whiteLists[i],
-                                                    proof: proofs[i]
-                                                })
-                                            }
-
-                                            await WhiteList.insertMany(newList);
-                                            project.rootHash = root;
-                                            await project.save();
-
-                                            return res.status(200).send({ status: RES_STATUS_SUCCESS, data: RES_MSG_SAVE_SUCCESS });
-                                        } else {
-                                            return res.status(4004).send({ status: RES_STATUS_FAIL, data: RES_MSG_SAVE_SUCCESS });
+                                        }catch (err) {
+                                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                                         }
+
 
                                     })
                             });

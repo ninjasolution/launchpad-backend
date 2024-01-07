@@ -331,10 +331,10 @@ class Service {
                 }
             }
 
-            if (project.status !== PROJECT_STATUS_UPLOAD && project.status == PROJECT_STATUS_IGO_DEPLOYED) {
+            if (project.status == PROJECT_STATUS_IGO_DEPLOYED) {
                 const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
                 igo = await IGOContract.attach(project.igo.address)
-            } else if (project.status !== PROJECT_STATUS_UPLOAD) {
+            } else if (project.status !== PROJECT_STATUS_PENDING) {
                 const IGOContract = new ethers.ContractFactory(IGO.abi, IGO.bytecode, this.wallet)
                 igo = await IGOContract.attach(project.igo.address)
 
@@ -343,8 +343,7 @@ class Service {
             }
 
             switch (project.status) {
-                case PROJECT_STATUS_UPLOAD:
-                    console.log(PROJECT_STATUS_UPLOAD)
+                case PROJECT_STATUS_PENDING:
                     return deployIGO();
                 case PROJECT_STATUS_IGO_DEPLOYED:
                     console.log(PROJECT_STATUS_IGO_DEPLOYED)
