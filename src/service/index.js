@@ -31,7 +31,6 @@ class Service {
             if (!err) {
                 projects.forEach(item => {
                     if (item?.staking?.address) {
-                        console.log(item?.staking?.address)
                         // this.detectStakingEvent(item?.staking?.address)
                     }
                 })
@@ -87,7 +86,6 @@ class Service {
                 })
 
                 await User.updateOne({ _id: user?._id }, { tier })
-                console.log(events[4].blockHash)
             } catch (err) {
                 console.log(err)
             }

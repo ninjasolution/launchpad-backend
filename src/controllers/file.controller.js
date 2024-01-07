@@ -14,10 +14,11 @@ const WhiteList = db.whiteList;
 const storage = multer.diskStorage({
 
     destination: (req, file, cb) => {
+        console.log(file)
         cb(null, './files');
     },
     filename: (req, file, cb) => {
-
+        console.log(file)
         cb(null, file.originalname);
     }
 });
@@ -42,8 +43,8 @@ exports.csvUploader = (req, res) => {
             }
 
             if (!req.file) {
-                console.log("No file is available!");
-                return res.send({
+                console.log("No file is available!", req.body);
+                return res.status(400).send({
                     success: false
                 });
 
