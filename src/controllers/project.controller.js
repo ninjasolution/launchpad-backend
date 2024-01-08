@@ -466,6 +466,26 @@ exports.getWhiteList = async (req, res) => {
 
 }
 
+exports.dashboard = async (req, res) => {
+    let data = {
+        launchedProjects: 0,
+        incubationProjects: 0
+    }
+    try {
+        data.launchedProjects = await Project.countDocuments({"igo.address": {$ne: null}})
+    }catch (err) {}
+
+    try {
+        data.incubationProjects = await Project.countDocuments({"igo.address": null})
+    }catch (err) {}
+
+    return res.status(200).send({
+        message: RES_MSG_SUCESS,
+        data,
+        status: RES_STATUS_SUCCESS,
+    });
+}
+
 exports.genSnapshot = async (req, res) => {
     Project.findOne({ _id: req.query.projectId })
         .exec((err, _project) => {
