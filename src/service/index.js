@@ -31,7 +31,7 @@ class Service {
             if (!err) {
                 projects.forEach(item => {
                     if (item?.staking?.address) {
-                        // this.detectStakingEvent(item?.staking?.address)
+                        this.detectStakingEvent(item?.staking?.address)
                     }
                 })
             }
