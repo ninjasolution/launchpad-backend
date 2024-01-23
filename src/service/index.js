@@ -391,6 +391,7 @@ class Service {
                 const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
                 vesting = await VestingContract.attach(project.vesting.address)
             }
+            console.log(_tags, project.status)
 
             switch (project.status) {
                 case PROJECT_STATUS_PENDING:
