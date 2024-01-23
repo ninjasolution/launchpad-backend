@@ -261,7 +261,16 @@ class Service {
                         "vestingContract": vesting.address,
                     };
 
-                    await igo.initialize(this.wallet.address, igoSetUp, [], []);
+                    const gasEstimate = await igo.estimateGas.initialize(igoSetUp, [], []);
+                    // Add a buffer to the gas estimate (20% buffer in this example)
+                    let gasLimit = gasEstimate.mul(120).div(100);
+
+                    // Set a minimum gas limit (e.g., 21,000 for a simple transfer)
+                    const minGasLimit = ethers.BigNumber.from('21000');
+                    if (gasLimit.lt(minGasLimit)) {
+                        gasLimit = minGasLimit;
+                    }
+                    await igo.initialize(this.wallet.address, igoSetUp, [], [], { gasPrice, gasLimit });
                     project.status = PROJECT_STATUS_IGO_INITIALIZED
 
                     return vestingInitialize()
@@ -274,9 +283,21 @@ class Service {
             const vestingInitialize = async () => {
 
                 try {
+                    const gasEstimate = await vesting.estimateGas.initializeCrowdfunding(
+                        _contractSetup,
+                        _vestingSetup);
+                    // Add a buffer to the gas estimate (20% buffer in this example)
+                    let gasLimit = gasEstimate.mul(120).div(100);
+
+                    // Set a minimum gas limit (e.g., 21,000 for a simple transfer)
+                    const minGasLimit = ethers.BigNumber.from('21000');
+                    if (gasLimit.lt(minGasLimit)) {
+                        gasLimit = minGasLimit;
+                    }
                     await vesting.initializeCrowdfunding(
                         _contractSetup,
                         _vestingSetup,
+                        { gasPrice, gasLimit }
                     );
                     project.status = PROJECT_STATUS_VESTING_INITIALIZED
                     return vestingOwnership()
@@ -290,7 +311,16 @@ class Service {
 
                 try {
 
-                    await vesting.transferOwnership(igo.address);
+                    const gasEstimate = await vesting.estimateGas.transferOwnership(igo.address);
+                    // Add a buffer to the gas estimate (20% buffer in this example)
+                    let gasLimit = gasEstimate.mul(120).div(100);
+
+                    // Set a minimum gas limit (e.g., 21,000 for a simple transfer)
+                    const minGasLimit = ethers.BigNumber.from('21000');
+                    if (gasLimit.lt(minGasLimit)) {
+                        gasLimit = minGasLimit;
+                    }
+                    await vesting.transferOwnership(igo.address, { gasPrice, gasLimit: gasLimit });
                     project.status = PROJECT_STATUS_VESTING_OWNERSHIP
                     console.log("is setup")
 
@@ -304,7 +334,16 @@ class Service {
             const igoSetTags = async () => {
 
                 try {
-                    await igo.updateSetTags(_tagIds, _tags);
+                    const gasEstimate = await igo.estimateGas.updateSetTags(_tagIds, _tags);
+                    // Add a buffer to the gas estimate (20% buffer in this example)
+                    let gasLimit = gasEstimate.mul(120).div(100);
+
+                    // Set a minimum gas limit (e.g., 21,000 for a simple transfer)
+                    const minGasLimit = ethers.BigNumber.from('21000');
+                    if (gasLimit.lt(minGasLimit)) {
+                        gasLimit = minGasLimit;
+                    }
+                    await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit });
                     project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
                     console.log("is updated tags")
 
@@ -318,7 +357,18 @@ class Service {
             const igoGrantRole = async () => {
 
                 try {
-                    await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin);
+
+                    const roleId = await igo.DEFAULT_ADMIN_ROLE();
+                    const gasEstimate = await igo.estimateGas.grantRole(roleId, _contractSetup.admin);
+                    // Add a buffer to the gas estimate (20% buffer in this example)
+                    let gasLimit = gasEstimate.mul(120).div(100);
+
+                    // Set a minimum gas limit (e.g., 21,000 for a simple transfer)
+                    const minGasLimit = ethers.BigNumber.from('21000');
+                    if (gasLimit.lt(minGasLimit)) {
+                        gasLimit = minGasLimit;
+                    }
+                    await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin, { gasPrice, gasLimit });
                     project.status = PROJECT_STATUS_IGO_GRANT_ROLE
                     console.log(await igo.setUp())
                     project.enable = true;
