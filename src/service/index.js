@@ -334,17 +334,9 @@ class Service {
             const igoSetTags = async () => {
 
                 try {
-                    const gasEstimate = await igo.estimateGas.updateSetTags(_tagIds, _tags);
-                    // Add a buffer to the gas estimate (20% buffer in this example)
-                    let gasLimit = gasEstimate.mul(120).div(100);
-
-                    // Set a minimum gas limit (e.g., 21,000 for a simple transfer)
-                    const minGasLimit = ethers.BigNumber.from('21000');
-                    if (gasLimit.lt(minGasLimit)) {
-                        gasLimit = minGasLimit;
-                    }
+                    
                     console.log(_tags)
-                    await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit });
+                    await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: "150000" });
                     project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
                     console.log("is updated tags")
 
@@ -391,7 +383,6 @@ class Service {
                 const VestingContract = new ethers.ContractFactory(IGOVesting.abi, IGOVesting.bytecode, this.wallet)
                 vesting = await VestingContract.attach(project.vesting.address)
             }
-            console.log(_tags, project.status)
 
             switch (project.status) {
                 case PROJECT_STATUS_PENDING:
