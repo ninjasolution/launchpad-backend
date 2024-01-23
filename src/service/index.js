@@ -343,6 +343,7 @@ class Service {
                     if (gasLimit.lt(minGasLimit)) {
                         gasLimit = minGasLimit;
                     }
+                    console.log(_tags)
                     await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit });
                     project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
                     console.log("is updated tags")
