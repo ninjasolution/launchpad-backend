@@ -335,7 +335,6 @@ class Service {
 
                 try {
                     
-                    console.log(_tags)
                     await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: "150000" });
                     project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
                     console.log("is updated tags")
