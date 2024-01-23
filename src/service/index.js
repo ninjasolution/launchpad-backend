@@ -261,7 +261,7 @@ class Service {
                         "vestingContract": vesting.address,
                     };
 
-                    await igo.initialize(this.wallet.address, igoSetUp, [], [], { gasPrice, gasLimit: 15000000 });
+                    await igo.initialize(this.wallet.address, igoSetUp, [], []);
                     project.status = PROJECT_STATUS_IGO_INITIALIZED
 
                     return vestingInitialize()
@@ -277,7 +277,6 @@ class Service {
                     await vesting.initializeCrowdfunding(
                         _contractSetup,
                         _vestingSetup,
-                        { gasPrice, gasLimit: 15000000 }
                     );
                     project.status = PROJECT_STATUS_VESTING_INITIALIZED
                     return vestingOwnership()
@@ -291,7 +290,7 @@ class Service {
 
                 try {
 
-                    await vesting.transferOwnership(igo.address, { gasPrice, gasLimit: 15000000 });
+                    await vesting.transferOwnership(igo.address);
                     project.status = PROJECT_STATUS_VESTING_OWNERSHIP
                     console.log("is setup")
 
@@ -305,7 +304,7 @@ class Service {
             const igoSetTags = async () => {
 
                 try {
-                    await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: 15000000 });
+                    await igo.updateSetTags(_tagIds, _tags);
                     project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
                     console.log("is updated tags")
 
@@ -319,7 +318,7 @@ class Service {
             const igoGrantRole = async () => {
 
                 try {
-                    await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin, { gasPrice, gasLimit: 15000000 });
+                    await igo.grantRole(await igo.DEFAULT_ADMIN_ROLE(), _contractSetup.admin);
                     project.status = PROJECT_STATUS_IGO_GRANT_ROLE
                     console.log(await igo.setUp())
                     project.enable = true;
