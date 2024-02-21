@@ -11,6 +11,16 @@ module.exports = (connection, autoIncrement) => {
       min: 3,
       max: 35,
     },
+    class: {
+      type: Number,
+      ref: "Class"
+    },
+    files: [{
+      type: String,
+    }],
+    links: [{
+      type: String,
+    }],
     token: {
       type: Object
     },
@@ -19,6 +29,14 @@ module.exports = (connection, autoIncrement) => {
     },
     description: {
       type: String
+    },
+    sections: [{
+      type: Object,
+      default: {}
+    }],
+    returnPercent: {
+      type: Object,
+      default: {}
     },
     webUrl: {
       type: String,
@@ -38,9 +56,6 @@ module.exports = (connection, autoIncrement) => {
     },
     endAt: {
       type: Number,
-    },
-    inoLaunchAt: {
-      type: Number
     },
     teams: {
       type: Object,

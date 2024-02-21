@@ -63,6 +63,7 @@ const Coin = db.coin;
 const Country = db.country;
 const Tier = db.tier;
 const Category = db.category;
+const AssetClass = db.class
 
 db.connection.on("open", () => {
   console.log("Successfully connect to MongoDB.");
@@ -194,6 +195,18 @@ function initial() {
     }
   });
 
+  AssetClass.estimatedDocumentCount(async (err, count) => {
+    if (!err && count == 0) {
+
+      source.classes.forEach(async item => {
+        const assetClass = new AssetClass({
+          name: item.name,
+        });
+        await assetClass.save();
+      })
+      console.log("asset class has been stored!")
+    }
+  });
 
 }
 

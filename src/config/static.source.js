@@ -2051,5 +2051,16 @@ module.exports = {
     {
       name: "NFT"
     },
+  ],
+  classes: [
+    {
+      name: "Commercial Real Estate"
+    },
+    {
+      name: "Mixed-Use"
+    },
+    {
+      name: "Multifamily"
+    },
   ]
 }
