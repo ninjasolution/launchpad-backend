@@ -1,31 +1,31 @@
 const db = require("../models");
-const Chain = db.chain;
+const AssetClass = db.class;
 const config = require("../config/index")
 
 exports.list = (req, res) => {
-  Chain.find()
-    .exec((err, chains) => {
+  AssetClass.find()
+    .exec((err, assetClasses) => {
 
       if (err) {
         res.status(500).send({ message: err, status: config.RES_STATUS_FAIL });
         return;
       }
 
-      if (!chains) {
+      if (!assetClasses) {
         return res.status(404).send({ message: config.RES_MSG_DATA_NOT_FOUND });
       }
 
       return res.status(200).send({
         message: config.RES_MSG_DATA_FOUND,
-        data: chains,
+        data: assetClasses,
         status: config.RES_STATUS_SUCCESS,
       });
     })
 };
 
 exports.update = (req, res) => {
-  Chain.updateOne({ _id: req.params.id }, { name: req.body.name })
-    .exec((err, chain) => {
+  AssetClass.updateOne({ _id: req.params.id }, { name: req.body.name })
+    .exec((err, assetClass) => {
 
       if (err) {
         res.status(500).send({ message: err, status: config.RES_MSG_UPDATE_FAIL });
@@ -34,7 +34,7 @@ exports.update = (req, res) => {
 
       return res.status(200).send({
         message: config.RES_MSG_UPDATE_SUCCESS,
-        data: chain,
+        data: assetClass,
         status: config.RES_STATUS_SUCCESS,
       });
     })
@@ -42,7 +42,7 @@ exports.update = (req, res) => {
 
 
 exports.delete = (req, res) => {
-  Chain.deleteOne({ _id: req.params.id })
+  AssetClass.deleteOne({ _id: req.params.id })
     .exec((err) => {
 
       if (err) {
@@ -59,8 +59,8 @@ exports.delete = (req, res) => {
 
 
 exports.create = (req, res) => {
-  const chain = new Chain(req.body);
-  chain.save(async (err, chain) => {
+  const assetClass = new AssetClass(req.body);
+  assetClass.save(async (err, assetClass) => {
     if (err) {
       console.log(err)
       return res.status(400).send({ message: err, status: "errors" });
@@ -68,7 +68,7 @@ exports.create = (req, res) => {
 
     return res.status(200).send({
       message: config.RES_MSG_SAVE_SUCCESS,
-      data: chain,
+      data: assetClass,
       status: config.RES_STATUS_SUCCESS,
     });
   });

@@ -18,6 +18,7 @@ const countryController = require("../controllers/country.controller");
 const transactionController = require("../controllers/transaction.controller");
 const daoController = require("../controllers/dao.controller");
 const commentController = require("../controllers/comment.controller");
+const assetClassController = require("../controllers/assetClass.controller");
 
 router.post("/auth/signup", [middlewares.verifySignUp.checkRolesExisted], authController.signup)
 router.post("/auth/signin", authController.signin)
@@ -94,6 +95,9 @@ router.get("/chain/list", chainController.list)
 //Coin
 router.post("/coin/create", middlewares.authJwt.verifyToken, coinController.create)
 router.get("/coin/list", coinController.list)
+
+router.post("/asset-class/create", middlewares.authJwt.verifyToken, assetClassController.create)
+router.get("/asset-class/list", assetClassController.list)
 
 //NFT
 router.get("/nft/list", nftController.list)
