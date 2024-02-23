@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const timestamps = require('mongoose-timestamp');
 
 
 module.exports = (connection, autoIncrement) => {
@@ -10,7 +9,6 @@ module.exports = (connection, autoIncrement) => {
     }
   });
   AssetClassSchema.plugin(autoIncrement.plugin, "Class")
-  AssetClassSchema.plugin(timestamps);
 
   const AssetClass = connection.model(
     "Class",
