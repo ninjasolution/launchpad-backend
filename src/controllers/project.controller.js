@@ -354,6 +354,14 @@ exports.approve = async (req, res) => {
                 return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
             }
 
+            project.enable = true;
+            await project.save();
+            return res.status(200).send({
+                message: RES_MSG_SUCESS,
+                data: savedProject,
+                status: RES_STATUS_SUCCESS,
+            });
+
             let summedMaxTagCap = project.tags.reduce((sum, item) => {
                 return Number.parseInt(item.maxCap) + Number.parseInt(sum);
             }, 0)
