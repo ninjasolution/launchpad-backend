@@ -5,6 +5,7 @@ const Project = db.project;
 const WhiteList = db.whiteList;
 const Transaction = db.transaction;
 const Tier = db.tier;
+const User = db.user;
 const Tag = db.tag;
 const service = require("../service");
 
@@ -316,6 +317,7 @@ exports.update = async (req, res) => {
                             return res.status(404).send({ status: RES_STATUS_FAIL, data: RES_MSG_DATA_NOT_FOUND });
                         }
                     } catch (err) {
+                        console.log(err)
                         return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                     }
                 })
@@ -336,6 +338,7 @@ exports.update = async (req, res) => {
                 });
             })
     } catch (err) {
+        console.log(err)
         return res.status(500).send({
             message: RES_MSG_FAIL,
             status: RES_STATUS_FAIL,
