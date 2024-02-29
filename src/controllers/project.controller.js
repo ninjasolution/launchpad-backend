@@ -271,56 +271,52 @@ exports.update = async (req, res) => {
         }
 
         let oldProject = await Project.findOne({ _id: req.body._id });
-        if(oldProject?.curTag != req.body.curTag) {
-            let tag = await Tag.findOne({_id: req.body.curTag})
-            if(tag) {
+        if (oldProject?.curTag != req.body.curTag) {
+            let tag = await Tag.findOne({ _id: req.body.curTag })
+            if (tag) {
 
                 User.find()
-                .exec(async (err, users) => {
-    
-                    if (err) {
-                        return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                    }
-    
-                    try {
-    
-                        if (users) {
-    
-                            let allocations = users.map(user => ({
-                                tagId: tag.title,
-                                account: user.wallet,
-                                maxAllocation: tag.maxAllocation,
-                                refundFee: "40",
-                                igoTokenPerPaymentToken: tag.price,
-                            }));
-    
-                            let leaves = generateAllocLeaves(allocations)
-                            let { root, proofs } = generateMerkleRootAndProof(leaves);
-    
-                            let newList = [];
-                            let count = users.length;
-                            for (let i = 0; i < count; i++) {
-                                newList.push({
-                                    address: users[i].wallet,
-                                    project: project._id,
-                                    allocation: allocations[i],
-                                    proof: proofs[i]
-                                })
-                            }
-    
-                            await WhiteList.insertMany(newList);
-                            project.rootHash = root;
-                            await project.save();
-    
-                            return res.status(200).send({ status: RES_STATUS_SUCCESS, data: root });
-                        } else {
-                            return res.status(404).send({ status: RES_STATUS_FAIL, data: RES_MSG_DATA_NOT_FOUND });
+                    .exec(async (err, users) => {
+
+                        if (err) {
+                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                         }
-                    } catch (err) {
-                        console.log(err)
-                        return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                    }
-                })
+
+                        try {
+
+                            if (users) {
+
+                                let allocations = users.map(user => ({
+                                    tagId: tag.title,
+                                    account: user.wallet,
+                                    maxAllocation: tag.maxAllocation,
+                                    refundFee: "40",
+                                    igoTokenPerPaymentToken: tag.price,
+                                }));
+
+                                let leaves = service.generateAllocLeaves(allocations)
+                                let { root, proofs } = service.generateMerkleRootAndProof(leaves);
+
+                                let newList = [];
+                                let count = users.length;
+                                for (let i = 0; i < count; i++) {
+                                    newList.push({
+                                        address: users[i].wallet,
+                                        project: project._id,
+                                        allocation: allocations[i],
+                                        proof: proofs[i]
+                                    })
+                                }
+
+                                await WhiteList.insertMany(newList);
+                                await Project.updateOne({ _id: req.body._id }, { rootHash: root })
+
+                            }
+                        } catch (err) {
+                            console.log(err)
+                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
+                        }
+                    })
             }
         }
 
@@ -661,7 +657,7 @@ exports.genRoothash = async (req, res) => {
             }
 
             return res.status(200).send({ status: RES_STATUS_SUCCESS, data: project?.rootHash });
-           
+
         })
 
 }
