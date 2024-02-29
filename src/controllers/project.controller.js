@@ -278,44 +278,42 @@ exports.update = async (req, res) => {
                 User.find()
                     .exec(async (err, users) => {
 
-                        if (err) {
-                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
-                        }
-
-                        try {
-
-                            if (users) {
-
-                                let allocations = users.map(user => ({
-                                    tagId: tag.title,
-                                    account: user.wallet,
-                                    maxAllocation: tag.maxAllocation,
-                                    refundFee: "40",
-                                    igoTokenPerPaymentToken: tag.price,
-                                }));
-
-                                let leaves = service.generateAllocLeaves(allocations)
-                                let { root, proofs } = service.generateMerkleRootAndProof(leaves);
-
-                                let newList = [];
-                                let count = users.length;
-                                for (let i = 0; i < count; i++) {
-                                    newList.push({
-                                        address: users[i].wallet,
-                                        project: project._id,
-                                        allocation: allocations[i],
-                                        proof: proofs[i]
-                                    })
+                        if (!err) {
+                            try {
+    
+                                if (users) {
+    
+                                    let allocations = users.map(user => ({
+                                        tagId: tag.title,
+                                        account: user.wallet,
+                                        maxAllocation: service.customParse(tag.maxAllocation),
+                                        refundFee: "40",
+                                        igoTokenPerPaymentToken: tag.price,
+                                    }));
+    
+                                    let leaves = service.generateAllocLeaves(allocations)
+                                    let { root, proofs } = service.generateMerkleRootAndProof(leaves);
+    
+                                    let newList = [];
+                                    let count = users.length;
+                                    for (let i = 0; i < count; i++) {
+                                        newList.push({
+                                            address: users[i].wallet,
+                                            project: project._id,
+                                            allocation: allocations[i],
+                                            proof: proofs[i]
+                                        })
+                                    }
+    
+                                    await WhiteList.insertMany(newList);
+                                    await Project.updateOne({ _id: req.body._id }, { rootHash: root })
+    
                                 }
-
-                                await WhiteList.insertMany(newList);
-                                await Project.updateOne({ _id: req.body._id }, { rootHash: root })
-
+                            } catch (err) {
+                                console.log(err)
                             }
-                        } catch (err) {
-                            console.log(err)
-                            return res.status(500).send({ message: err, status: RES_STATUS_FAIL });
                         }
+
                     })
             }
         }

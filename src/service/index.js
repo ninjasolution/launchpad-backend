@@ -527,7 +527,7 @@ class Service {
 
     customParse(amount, decimals = 4) {
         if (!amount) return 0;
-        return amount * Math.pow(10, decimals);
+        return (amount * Math.pow(10, decimals)).toString();
     }
 
     customFormat(amount, decimals = 4) {
