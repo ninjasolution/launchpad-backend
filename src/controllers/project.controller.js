@@ -175,7 +175,6 @@ exports.getProof = async (req, res) => {
             }
 
             if (!whiteList) {
-                console.log(whiteList, projectId, req.wallet)
 
                 return res.status(404).send({
                     message: RES_MSG_DATA_NOT_FOUND,

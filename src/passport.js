@@ -58,7 +58,7 @@ passport.use("wallet-connect", new CustomStrategy(
         } else {
 
             User.findOne({
-                walletAddress: address
+                wallet: address
             })
                 .exec((err, user) => {
                     if (err) {
@@ -66,7 +66,7 @@ passport.use("wallet-connect", new CustomStrategy(
                     }
                     if (!user) {
                         const newUser = new User({
-                            walletAddress: address,
+                            wallet: address,
                         });
                         Role.findOne({ name: SUBADMIN }, async (err, role) => {
                             if (err) {

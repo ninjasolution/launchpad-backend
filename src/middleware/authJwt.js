@@ -12,12 +12,13 @@ const verifyToken = (req, res, next) => {
     return res.status(403).send({ message: "No token provided!", status: "errors" });
   }
 
-
   jwt.verify(token, securityCode, (err, decoded) => {
     if (err) {
       return res.status(200).send({ message: "Unauthorized!", status: "errors" });
     }
+    console.log(decoded)
     req.userId = decoded.id;
+    req.wallet = decoded?.wallet
     next();
   });
 };

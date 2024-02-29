@@ -88,7 +88,6 @@ exports.signup = async (req, res) => {
 
 exports.signin = async (req, res) => {
   const address = await service.recoverSignature(req.body.nonce, req.body.signature)
-  console.log(address)
   User.findOne({
     wallet: address
   })
@@ -118,7 +117,8 @@ exports.signin = async (req, res) => {
             if (err) {
               return res.status(200).send({ message: `E11000 duplicate key error collection: users index: email_1 dup key: { email: ${req.body.email}}`, status: RES_STATUS_FAIL });
             }
-            var token = jwt.sign({ id: nUser._id }, securityCode, {
+
+            var token = jwt.sign({ id: nUser._id, wallet: address }, securityCode, {
               expiresIn: 86400 // 24 hours
             });
 
@@ -142,7 +142,7 @@ exports.signin = async (req, res) => {
         return res.status(200).send({ message: "Not approved", status: RES_STATUS_FAIL });
       }
 
-      var token = jwt.sign({ id: user._id }, securityCode, {
+      var token = jwt.sign({ id: user._id, wallet: user.wallet }, securityCode, {
         expiresIn: 86400 // 24 hours
       });
 
