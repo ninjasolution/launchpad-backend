@@ -95,6 +95,7 @@ exports.get = async (req, res) => {
         .populate("createdBy")
         .populate("chain")
         .populate("tags")
+        .populate("class")
         .populate("curTag")
         .exec((err, project) => {
             if (err) {
