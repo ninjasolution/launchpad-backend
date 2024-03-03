@@ -387,7 +387,6 @@ exports.approve = async (req, res) => {
             }
 
             project.enable = true;
-            project.status = PROJECT_STATUS_UPLOAD;
             await project.save();
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
