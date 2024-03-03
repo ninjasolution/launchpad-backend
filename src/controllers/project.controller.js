@@ -390,7 +390,6 @@ exports.approve = async (req, res) => {
             await project.save();
             return res.status(200).send({
                 message: RES_MSG_SUCESS,
-                data: savedProject,
                 status: RES_STATUS_SUCCESS,
             });
 
