@@ -1,4 +1,4 @@
-const { RPC, igoFactoryAddr, igoDeployerAddr, stakingAddr, farmingAddr, TX_TYPE_LOCK, PLATFORM_TYPE_STAKING_IDO, PAYMENT_METHOD_CRYPTO, TX_STATUS_SUCCESS, chainId, PROJECT_VISIBLE_OPENED, securityTokenAddr, utilityTokenAddr, PROJECT_STATUS_IGO_DEPLOYED, PROJECT_STATUS_VESTING_DEPLOYED, PROJECT_STATUS_IGO_INITIALIZED, PROJECT_STATUS_VESTING_INITIALIZED, PROJECT_STATUS_VESTING_OWNERSHIP, PROJECT_STATUS_PENDING, PROJECT_STATUS_IGO_UPDATE_TAGS, PROJECT_STATUS_IGO_GRANT_ROLE, PROJECT_VISIBLE_NOT_STARTED } = require("../config");
+const { RPC, igoFactoryAddr, igoDeployerAddr, stakingAddr, farmingAddr, TX_TYPE_LOCK, PLATFORM_TYPE_STAKING_IDO, PAYMENT_METHOD_CRYPTO, TX_STATUS_SUCCESS, chainId, PROJECT_VISIBLE_OPENED, securityTokenAddr, utilityTokenAddr, PROJECT_STATUS_IGO_DEPLOYED, PROJECT_STATUS_VESTING_DEPLOYED, PROJECT_STATUS_IGO_INITIALIZED, PROJECT_STATUS_VESTING_INITIALIZED, PROJECT_STATUS_VESTING_OWNERSHIP, PROJECT_STATUS_PENDING, PROJECT_STATUS_IGO_UPDATE_TAGS, PROJECT_STATUS_IGO_GRANT_ROLE, PROJECT_VISIBLE_NOT_STARTED, TX_TYPE_BUY_IGO, PLATFORM_TYPE_INVEST_IGO } = require("../config");
 const ERC20 = require("../abis/ERC20.json")
 const IGOFactory = require("../abis/IGOFactory.json")
 const IGODeployer = require("../abis/IGODeployer.json")
@@ -32,11 +32,11 @@ class Service {
                 projects.forEach(item => {
                     if (item?.staking?.address) {
                         this.detectStakingEvent(item?.staking?.address)
+                        this.detectFundingEvent(item?.igo?.address)
                     }
                 })
             }
         })
-
     }
 
     async detectStakingEvent(address) {
@@ -50,7 +50,7 @@ class Service {
                 let decimals = 10000;
                 if (project) {
                     projectId = project?._id;
-                    decimals = project?.token?.decimals
+                    decimals = Math.pow(10, project?.token?.decimals)
                 }
 
                 let args = events[4].args;
@@ -95,7 +95,42 @@ class Service {
 
     }
 
+    async detectFundingEvent(address) {
+        let igoContract = new ethers.Contract(address, IGO.abi, this.wallet)
+        igoContract.on("AllocationReserved", async (...events) => {
+            try {
 
+                let project = await Project.findOne({ "igo.address": address });
+                let projectId = 0;
+                let decimals = 10000;
+                if (project) {
+                    projectId = project?._id;
+                }
+
+                let args = events[4].args;
+                let user = await User.findOne({ "wallet": args?.buyer });
+                const transaction = new Transaction({
+                    type: TX_TYPE_BUY_IGO,
+                    platform: PLATFORM_TYPE_INVEST_IGO,
+                    project: projectId,
+                    amount: args?.maxAllocation.toString() / decimals,
+                    coin: args?.paymentToken,
+                    paymentMethod: PAYMENT_METHOD_CRYPTO,
+                    chainId: chainId,
+                    status: TX_STATUS_SUCCESS,
+                    hash: events[4].blockHash,
+                    user: user?._id,
+                })
+                await transaction.save();
+
+            } catch (err) {
+                console.log(err)
+            }
+
+
+        });
+
+    }
 
     async createIGOTest() {
         try {
@@ -334,7 +369,7 @@ class Service {
             const igoSetTags = async () => {
 
                 try {
-                    
+
                     await igo.updateSetTags(_tagIds, _tags, { gasPrice, gasLimit: "150000" });
                     project.status = PROJECT_STATUS_IGO_UPDATE_TAGS
                     console.log("is updated tags")

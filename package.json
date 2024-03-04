@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prestart": "",
     "start": "nodemon index.js"
   },
   "author": "ninjasolution",
